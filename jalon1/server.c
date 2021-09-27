@@ -6,6 +6,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <poll.h>
 
 #include "common.h"
 #include "client_list.h"
@@ -29,12 +30,13 @@ char echo_server(int sockfd) {
 		exit(EXIT_FAILURE);
 	}
 
+
 	// Handling connection closing
 	if(strcmp(buff, "/quit\n") == 0){
 		return 1;
 	}
 
-	printf("Received: %s", buff);
+	printf("\tReceived: %s", buff);
 	
 	// Sending message (ECHO)
 	if (send(sockfd, buff, strlen(buff), 0) <= 0) {
@@ -42,7 +44,7 @@ char echo_server(int sockfd) {
 		exit(EXIT_FAILURE);
 	}
 
-	printf("Message sent!\n");
+	printf("\tMessage sent!\n");
 
 	return 0;
 }
@@ -90,6 +92,7 @@ int main(int argc, char *argv[]) {
 			exit(EXIT_FAILURE);
 	}
 	
+	struct client_list *client_list = client_list_new();
 	struct pollfd pollfds[MAX_CLIENTS];
 
 	pollfds[0].fd = sfd;
@@ -119,6 +122,7 @@ int main(int argc, char *argv[]) {
 					perror("accept()\n");
 					exit(EXIT_FAILURE);
 				}
+				
 
 				//store info in pollfds
 				for(int j = 0; j<MAX_CLIENTS; j++){
@@ -131,6 +135,18 @@ int main(int argc, char *argv[]) {
 				}
 
 				//store client info in list chainee
+				struct client *c = client_new();
+				struct sockaddr_in *client_in = (struct sockaddr_in *) &cli;
+				c->fd = connfd;
+				c->port = htons(client_in->sin_port);
+				char *ip_str = inet_ntoa(client_in->sin_addr);
+				c->host = malloc((strlen(ip_str)+1)*sizeof(char));
+				strcpy(c->host, ip_str);
+				
+				client_list_insert(client_list, c);
+
+				// Display Client info
+				printf("%s:%d :\n\tConnection accepted.\n", c->host, c->port);
 
 				// set pollfd[i].revent = 0
 				pollfds[i].revents = 0;
@@ -138,6 +154,11 @@ int main(int argc, char *argv[]) {
 			}else if(pollfds[i].fd != sfd && pollfds[i].revents & POLLHUP){
 				//close(pollfd[i].fd)
 				close(pollfds[i].fd);
+				struct client *c = client_list_get_client_by_fd(client_list, pollfds[i].fd);
+				client_list_drop_client(client_list, c);
+				pollfds[i].fd = -1;
+				pollfds[i].events = 0;
+				pollfds[i].revents = 0;
 
 				// display message on terminal
 				printf("client in fd = %d deconnected\n", pollfds[i].fd);
@@ -148,14 +169,17 @@ int main(int argc, char *argv[]) {
 				//set pollfds[i].revent = 0
 				pollfds[i].revents = 0;
 			}else if(pollfds[i].fd != sfd && pollfds[i].revents & POLLIN){
-
+				
+				struct client *c = client_list_get_client_by_fd(client_list, pollfds[i].fd);
+				printf("%s:%d :\n", c->host, c->port);
 				switch(echo_server(pollfds[i].fd)){
 					case 1:
 						close(pollfds[i].fd);
+						client_list_drop_client(client_list, c);
 						pollfds[i].fd = -1;
 						pollfds[i].events = 0;
 						pollfds[i].revents = 0;
-						printf("Connection was closed by the client\n");
+						printf("\tConnection was closed by the client.\n");
 						break;
 
 					default :
