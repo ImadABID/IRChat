@@ -1,12 +1,12 @@
 #ifndef __CLIENTS_LIST_H__
 #define __CLIENTS_LIST_H__
 
-#include <poll.h>
-
 
 struct client{
 
-    struct pollfd pfd;
+    int fd;
+    char *host;
+    unsigned short port;
 
     struct client *prev;
     struct client *next;
@@ -30,5 +30,7 @@ void client_list_free(struct client_list *cl);
 void client_list_insert(struct client_list *cl, struct client *c);
 void client_list_drop_client(struct client_list *cl, struct client *c);
 
+// Getters
+struct client *client_list_get_client_by_fd(struct client_list *cl, int fd);
 
 #endif

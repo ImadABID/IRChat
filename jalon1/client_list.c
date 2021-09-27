@@ -1,5 +1,6 @@
 #include "client_list.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 
 struct client *client_new(){
@@ -11,6 +12,7 @@ struct client *client_new(){
 }
 
 void client_free(struct client *c){
+    free(c->host);
     free(c);
 }
 
@@ -53,9 +55,9 @@ void client_list_insert(struct client_list *cl, struct client *c){
 void client_list_drop_client(struct client_list *cl, struct client *c){
 
     if(c->prev == NULL){
-        cl->first_client = c->next->next;
+        cl->first_client = c->next;
     }else{
-        c->prev->next = c->next->next;
+        c->prev->next = c->next;
     }
 
     if(c->next != NULL){
@@ -63,4 +65,20 @@ void client_list_drop_client(struct client_list *cl, struct client *c){
     }
 
     client_free(c);
+}
+
+// Getters
+struct client *client_list_get_client_by_fd(struct client_list *cl, int fd){
+    struct client *c = cl->first_client;
+
+    while(c != NULL){
+        if(c->fd == fd){
+            return c;
+        }
+        c = c->next;
+    }
+
+    fprintf(stderr, "client_list_get_client_by_fd : No such client with fd = %d.\n", fd);
+    exit(EXIT_FAILURE);
+    
 }
