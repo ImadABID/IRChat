@@ -9,7 +9,14 @@
 
 #include "common.h"
 
-void echo_server(int sockfd) {
+char echo_server(int sockfd) {
+	/*
+
+	Return value :
+	0 : every thing is ok
+	1 : connection closed by client
+
+	*/
 	char buff[MSG_LEN];
 	while (1) {
 		// Cleaning memory
@@ -18,13 +25,21 @@ void echo_server(int sockfd) {
 		if (recv(sockfd, buff, MSG_LEN, 0) <= 0) {
 			break;
 		}
+
+		// Handling connection closing
+		if(strcmp(buff, "/quit\n") == 0){
+			return 1;
+		}
 		printf("Received: %s", buff);
+		
 		// Sending message (ECHO)
 		if (send(sockfd, buff, strlen(buff), 0) <= 0) {
 			break;
 		}
 		printf("Message sent!\n");
 	}
+
+	return 0;
 }
 
 int handle_bind(char port[]) {
@@ -77,7 +92,16 @@ int main(int argc, char *argv[]) {
 		perror("accept()\n");
 		exit(EXIT_FAILURE);
 	}
-	echo_server(connfd);
+
+	switch(echo_server(connfd)){
+		case 1:
+			printf("Connection was closed by the client\n");
+			break;
+
+		default :
+			break;
+	}
+	
 	close(sfd);
 	return EXIT_SUCCESS;
 }
