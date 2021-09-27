@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include "common.h"
+#include "client_list.h"
 
 char echo_server(int sockfd) {
 	/*
@@ -18,26 +19,30 @@ char echo_server(int sockfd) {
 
 	*/
 	char buff[MSG_LEN];
-	while (1) {
-		// Cleaning memory
-		memset(buff, 0, MSG_LEN);
-		// Receiving message
-		if (recv(sockfd, buff, MSG_LEN, 0) <= 0) {
-			break;
-		}
 
-		// Handling connection closing
-		if(strcmp(buff, "/quit\n") == 0){
-			return 1;
-		}
-		printf("Received: %s", buff);
-		
-		// Sending message (ECHO)
-		if (send(sockfd, buff, strlen(buff), 0) <= 0) {
-			break;
-		}
-		printf("Message sent!\n");
+	// Cleaning memory
+	memset(buff, 0, MSG_LEN);
+
+	// Receiving message
+	if (recv(sockfd, buff, MSG_LEN, 0) <= 0) {
+		fprintf(stderr, "Error at recv\n");
+		exit(EXIT_FAILURE);
 	}
+
+	// Handling connection closing
+	if(strcmp(buff, "/quit\n") == 0){
+		return 1;
+	}
+
+	printf("Received: %s", buff);
+	
+	// Sending message (ECHO)
+	if (send(sockfd, buff, strlen(buff), 0) <= 0) {
+		fprintf(stderr, "Error at send\n");
+		exit(EXIT_FAILURE);
+	}
+
+	printf("Message sent!\n");
 
 	return 0;
 }
@@ -79,29 +84,89 @@ int main(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	struct sockaddr cli;
-	int sfd, connfd;
-	socklen_t len;
-	sfd = handle_bind(argv[1]);
+	int sfd = handle_bind(argv[1]);
 	if ((listen(sfd, SOMAXCONN)) != 0) {
-		perror("listen()\n");
-		exit(EXIT_FAILURE);
-	}
-	len = sizeof(cli);
-	if ((connfd = accept(sfd, (struct sockaddr*) &cli, &len)) < 0) {
-		perror("accept()\n");
-		exit(EXIT_FAILURE);
-	}
-
-	switch(echo_server(connfd)){
-		case 1:
-			printf("Connection was closed by the client\n");
-			break;
-
-		default :
-			break;
+			perror("listen()\n");
+			exit(EXIT_FAILURE);
 	}
 	
+	struct pollfd pollfds[MAX_CLIENTS];
+
+	pollfds[0].fd = sfd;
+	pollfds[0].events = POLLIN;
+	pollfds[0].revents = 0;
+	for(int i=1; i<MAX_CLIENTS; i++){
+		pollfds[i].fd = -1;
+		pollfds[i].events = 0;
+		pollfds[i].revents = 0;
+	}
+
+	while(1){
+		int n_active;
+		if(-1 == (n_active = poll(pollfds, MAX_CLIENTS, POLL_TIMEOUT))){
+			perror("Poll");
+		}
+
+		for(int i = 0; i<MAX_CLIENTS; i++){
+
+			if(pollfds[i].fd == sfd && pollfds[i].revents & POLLIN){
+				// Accept
+				struct sockaddr cli;
+				int connfd;
+				socklen_t len = sizeof(cli);
+				
+				if ((connfd = accept(sfd, (struct sockaddr*) &cli, &len)) < 0) {
+					perror("accept()\n");
+					exit(EXIT_FAILURE);
+				}
+
+				//store info in pollfds
+				for(int j = 0; j<MAX_CLIENTS; j++){
+					if(pollfds[j].fd == -1){
+						pollfds[j].fd = connfd;
+						pollfds[j].events = POLLIN;
+						pollfds[j].revents = 0;
+						break;
+					}
+				}
+
+				//store client info in list chainee
+
+				// set pollfd[i].revent = 0
+				pollfds[i].revents = 0;
+
+			}else if(pollfds[i].fd != sfd && pollfds[i].revents & POLLHUP){
+				//close(pollfd[i].fd)
+				close(pollfds[i].fd);
+
+				// display message on terminal
+				printf("client in fd = %d deconnected\n", pollfds[i].fd);
+
+				// set pollfds[i].event = 0
+				pollfds[i].events = 0;
+
+				//set pollfds[i].revent = 0
+				pollfds[i].revents = 0;
+			}else if(pollfds[i].fd != sfd && pollfds[i].revents & POLLIN){
+
+				switch(echo_server(pollfds[i].fd)){
+					case 1:
+						close(pollfds[i].fd);
+						pollfds[i].fd = -1;
+						pollfds[i].events = 0;
+						pollfds[i].revents = 0;
+						printf("Connection was closed by the client\n");
+						break;
+
+					default :
+						break;
+				}
+
+			}
+		}
+	}
+
 	close(sfd);
+
 	return EXIT_SUCCESS;
 }
