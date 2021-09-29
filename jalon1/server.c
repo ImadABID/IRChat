@@ -36,7 +36,7 @@ char echo_server(int sockfd) {
 		return 1;
 	}
 
-	printf("\tReceived: %s", buff);
+	printf("\tReceived: %s\n", buff);
 	
 	// Sending message (ECHO)
 	if (send(sockfd, buff, strlen(buff), 0) <= 0) {
@@ -152,15 +152,15 @@ int main(int argc, char *argv[]) {
 				pollfds[i].revents = 0;
 
 			}else if(pollfds[i].fd != sfd && pollfds[i].revents & POLLHUP){
+				// display message on terminal
+				printf("Client in fd = %d deconnected\n", pollfds[i].fd);
+				
 				//close(pollfd[i].fd)
 				close(pollfds[i].fd);
 				client_list_drop_client_by_fd(client_list, pollfds[i].fd);
 				pollfds[i].fd = -1;
 				pollfds[i].events = 0;
 				pollfds[i].revents = 0;
-
-				// display message on terminal
-				printf("client in fd = %d deconnected\n", pollfds[i].fd);
 
 				// set pollfds[i].event = 0
 				pollfds[i].events = 0;
@@ -170,7 +170,7 @@ int main(int argc, char *argv[]) {
 			}else if(pollfds[i].fd != sfd && pollfds[i].revents & POLLIN){
 				
 				struct client *c = client_list_get_client_by_fd(client_list, pollfds[i].fd);
-				printf("%s:%d :\n", c->host, c->port);
+				printf("\n%s:%d :\n", c->host, c->port);
 				switch(echo_server(pollfds[i].fd)){
 					case 1:
 						close(pollfds[i].fd);

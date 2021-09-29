@@ -6,6 +6,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <poll.h>
 
 #include "common.h"
 
@@ -18,37 +19,83 @@ char echo_client(int sockfd) {
 	2 : connection closed by server
 
 	*/
-	char buff[MSG_LEN];
-	int n;
+
+	struct pollfd pollfds[2];
+	pollfds[0].fd = STDIN_FILENO;
+	pollfds[0].events = POLLIN;
+	pollfds[0].revents = 0;
+	pollfds[1].fd = sockfd;
+	pollfds[1].events = POLLIN;
+	pollfds[1].revents = 0;
+
+	char buff_stdin[MSG_LEN];
+	int buff_stdin_i;
+
+	char buff_sockin[MSG_LEN];
+
+	// Getting message from client
+	printf("\nMessage:\n"); fflush(stdout);
+
 	while (1) {
-		// Cleaning memory
-		memset(buff, 0, MSG_LEN);
-		// Getting message from client
-		printf("Message: ");
-		n = 0;
-		while ((buff[n++] = getchar()) != '\n') {} // trailing '\n' will be sent
-		// Sending message (ECHO)
-		if (send(sockfd, buff, strlen(buff), 0) <= 0) {
-			break;
+
+		int n_active;
+		if(-1 == (n_active = poll(pollfds, 2, POLL_TIMEOUT))){
+			perror("Poll");
 		}
 
-		if(strcmp(buff, "/quit\n") == 0){
-			return 1;
+		if(pollfds[0].revents & POLLIN){
+
+			// buffer index
+			memset(buff_stdin, 0, MSG_LEN);
+			buff_stdin_i = 0;
+
+			char c = getchar();
+			while(c != '\n'){
+				buff_stdin[buff_stdin_i++] = c;
+				c = getchar();
+			}
+
+			// sending msg
+			if (send(sockfd, buff_stdin, buff_stdin_i, 0) <= 0) {
+				perror("send");
+				exit(EXIT_FAILURE);
+			}
+			printf("Message sent!\n");
+
+			// Verify if /quit
+			if(strcmp(buff_stdin, "/quit") == 0){
+				return 1;
+			}
+
+			// Getting message from client
+			printf("\nMessage:\n"); fflush(stdout);
+
+			pollfds[0].revents = 0;
 		}
 
-		printf("Message sent!\n");
-		// Cleaning memory
-		memset(buff, 0, MSG_LEN);
-		// Receiving message
-		if (recv(sockfd, buff, MSG_LEN, 0) <= 0) {
-			break;
+		if(pollfds[1].revents & POLLIN){
+			// Cleaning memory
+			memset(buff_sockin, 0, MSG_LEN);
+
+			// Receiving message
+			if (recv(sockfd, buff_sockin, MSG_LEN, 0) <= 0) {
+				perror("recv");
+				exit(EXIT_FAILURE);
+			}
+
+			if(strcmp(buff_sockin, "/quit") == 0){
+				return 2;
+			}
+
+			printf("Received: %s\n", buff_sockin);
+
+			pollfds[1].revents = 0;
 		}
 
-		if(strcmp(buff, "/quit\n") == 0){
+		if(pollfds[1].revents & POLLHUP){
 			return 2;
 		}
-
-		printf("Received: %s", buff);
+		
 	}
 
 	return 0;
