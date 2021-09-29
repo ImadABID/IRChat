@@ -5,7 +5,7 @@
 
 struct client *client_new(){
     struct client *c = malloc(sizeof(struct client));
-    c->prev = NULL;
+
     c->next = NULL;
 
     return c;
@@ -18,17 +18,8 @@ void client_free(struct client *c){
 
 void client_recursive_free(struct client *c){
     if(c != NULL){
-        if(c->prev != NULL){
-           client_recursive_free(c->prev);
-        }else{
-            if(c->next == NULL){
-                client_free(c);
-            }else{
-                c->next->prev = NULL;
-                client_recursive_free(c->next);
-                client_free(c);
-            }
-        }
+        client_recursive_free(c->next);
+        client_free(c);
     }
 }
 
@@ -46,25 +37,40 @@ void client_list_free(struct client_list *cl){
 }
 
 void client_list_insert(struct client_list *cl, struct client *c){
-    c->prev = NULL;
     c->next = cl->first_client;
-
     cl->first_client = c;
 }
 
-void client_list_drop_client(struct client_list *cl, struct client *c){
+void client_list_drop_client_by_fd(struct client_list *cl, int fd){
 
-    if(c->prev == NULL){
-        cl->first_client = c->next;
-    }else{
-        c->prev->next = c->next;
+    struct client *c = cl->first_client;
+    struct client *c_prev = NULL;
+
+    // Finding prev c
+    while(c != NULL){
+
+        if(c->fd == fd){
+            break;
+        }
+
+        c_prev = c;
+        c = c->next;
     }
 
-    if(c->next != NULL){
-        c->next->prev = c->prev;
+    if(c == NULL){
+        fprintf(stderr, "client_list_drop_client_by_fd : Can't find client with fd = %d.\n", fd);
+        exit(EXIT_FAILURE);
+    }
+
+    // deleting client
+    if(c_prev == NULL){
+        cl->first_client = c->next;
+    }else{
+        c_prev->next = c->next;
     }
 
     client_free(c);
+
 }
 
 // Getters

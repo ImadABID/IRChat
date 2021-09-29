@@ -154,8 +154,7 @@ int main(int argc, char *argv[]) {
 			}else if(pollfds[i].fd != sfd && pollfds[i].revents & POLLHUP){
 				//close(pollfd[i].fd)
 				close(pollfds[i].fd);
-				struct client *c = client_list_get_client_by_fd(client_list, pollfds[i].fd);
-				client_list_drop_client(client_list, c);
+				client_list_drop_client_by_fd(client_list, pollfds[i].fd);
 				pollfds[i].fd = -1;
 				pollfds[i].events = 0;
 				pollfds[i].revents = 0;
@@ -175,7 +174,7 @@ int main(int argc, char *argv[]) {
 				switch(echo_server(pollfds[i].fd)){
 					case 1:
 						close(pollfds[i].fd);
-						client_list_drop_client(client_list, c);
+						client_list_drop_client_by_fd(client_list, pollfds[i].fd);
 						pollfds[i].fd = -1;
 						pollfds[i].events = 0;
 						pollfds[i].revents = 0;
@@ -190,6 +189,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+	client_list_free(client_list);
 	close(sfd);
 
 	return EXIT_SUCCESS;
