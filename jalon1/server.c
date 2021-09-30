@@ -10,6 +10,7 @@
 
 #include "common.h"
 #include "client_list.h"
+#include "socket_IO.h"
 
 char echo_server(int sockfd) {
 	/*
@@ -19,30 +20,24 @@ char echo_server(int sockfd) {
 	1 : connection closed by client
 
 	*/
-	char buff[MSG_LEN];
-
-	// Cleaning memory
-	memset(buff, 0, MSG_LEN);
+	char *buff;
+	size_t buff_size;
 
 	// Receiving message
-	if (recv(sockfd, buff, MSG_LEN, 0) <= 0) {
-		fprintf(stderr, "Error at recv\n");
-		exit(EXIT_FAILURE);
-	}
-
+	buff = (char *) receive_data(sockfd, &buff_size);
 
 	// Handling connection closing
-	if(strcmp(buff, "/quit\n") == 0){
+	if(strcmp(buff, "/quit") == 0){
+		free(buff);
 		return 1;
 	}
 
 	printf("\tReceived: %s\n", buff);
 	
 	// Sending message (ECHO)
-	if (send(sockfd, buff, strlen(buff), 0) <= 0) {
-		fprintf(stderr, "Error at send\n");
-		exit(EXIT_FAILURE);
-	}
+	send_data(sockfd, buff, buff_size);
+
+	free(buff);
 
 	printf("\tMessage sent!\n");
 

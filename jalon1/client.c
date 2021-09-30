@@ -9,6 +9,7 @@
 #include <poll.h>
 
 #include "common.h"
+#include "socket_IO.h"
 
 char echo_client(int sockfd) {
 	/*
@@ -30,8 +31,6 @@ char echo_client(int sockfd) {
 
 	char buff_stdin[MSG_LEN];
 	int buff_stdin_i;
-
-	char buff_sockin[MSG_LEN];
 
 	// Getting message from client
 	printf("\nMessage:\n"); fflush(stdout);
@@ -55,12 +54,11 @@ char echo_client(int sockfd) {
 				c = getchar();
 			}
 
+			buff_stdin[buff_stdin_i++] = '\0';
+
 			// sending msg
-			if (send(sockfd, buff_stdin, buff_stdin_i, 0) <= 0) {
-				perror("send");
-				exit(EXIT_FAILURE);
-			}
-			printf("Message sent!\n");
+			send_data(sockfd, buff_stdin, buff_stdin_i);
+			printf("Message sent! %s\n", buff_stdin);
 
 			// Verify if /quit
 			if(strcmp(buff_stdin, "/quit") == 0){
@@ -74,20 +72,18 @@ char echo_client(int sockfd) {
 		}
 
 		if(pollfds[1].revents & POLLIN){
-			// Cleaning memory
-			memset(buff_sockin, 0, MSG_LEN);
 
 			// Receiving message
-			if (recv(sockfd, buff_sockin, MSG_LEN, 0) <= 0) {
-				perror("recv");
-				exit(EXIT_FAILURE);
-			}
+			size_t buff_sockin_size;
+			char *buff_sockin = (char *) receive_data(sockfd, &buff_sockin_size);
 
 			if(strcmp(buff_sockin, "/quit") == 0){
+				free(buff_sockin);
 				return 2;
 			}
 
 			printf("Received: %s\n", buff_sockin);
+			free(buff_sockin);
 
 			pollfds[1].revents = 0;
 		}
