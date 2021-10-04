@@ -1,12 +1,15 @@
 #ifndef __CLIENTS_LIST_H__
 #define __CLIENTS_LIST_H__
 
+#include "msg_struct.h"
 
 struct client{
 
     int fd;
     char *host;
     unsigned short port;
+
+    char *nickname;
     
     struct client *next;
     
@@ -31,5 +34,9 @@ void client_list_drop_client_by_fd(struct client_list *cl, int fd);
 
 // Getters
 struct client *client_list_get_client_by_fd(struct client_list *cl, int fd);
+
+//nickname check
+char client_list_nickname_already_used(struct client_list *cl, int fd, char *nikname);
+
 
 #endif

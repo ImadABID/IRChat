@@ -12,6 +12,45 @@
 #include "msg_IO.h"
 #include "req_reader.h"
 
+char nick_name[NICK_LEN];
+
+int choose_nick_name(int socket_fd){
+	printf("Choose a nickname : ");
+
+	char nick_name_[NICK_LEN];
+	size_t nikname_len = 0;
+	char c = getchar();
+	while(c != '\n'){
+		if(!(('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9'))){
+			printf("Nikname shouldn't contain special characters. Try again.\n");
+			return -1;
+		}
+		nick_name_[nikname_len++] = c;
+		c = getchar();
+		if(nikname_len > NICK_LEN-1){
+			printf("Nikname too long. Try again.\n");
+			return -1;
+		}
+	}
+
+	nick_name_[nikname_len++] = '\0';
+
+	if(nikname_len==1){
+		printf("Nikname can't be an empty string. Try again.\n");
+		return -1;
+	}
+
+	struct message struct_msg;
+	struct_msg.pld_len = 0;
+	strcpy(struct_msg.nick_sender, nick_name);
+	struct_msg.type = NICKNAME_NEW;
+	strcpy(struct_msg.infos, nick_name_);
+
+	send_msg(socket_fd, &struct_msg, NULL);
+
+	return 0;
+}
+
 int handle_connect(char host[], char port[]){
 	struct addrinfo hints, *result, *rp;
 	int sfd;
@@ -49,6 +88,10 @@ int main(int argc, char *argv[]) {
 
 	int socket_fd = handle_connect(argv[1], argv[2]);
 
+	//Choosing Nickname
+	strcpy(nick_name, "");
+	while(choose_nick_name(socket_fd)!=0);
+
 	struct pollfd pollfds[2];
 	pollfds[0].fd = STDIN_FILENO;
 	pollfds[0].events = POLLIN;
@@ -59,9 +102,6 @@ int main(int argc, char *argv[]) {
 
 	char buff_stdin[MSG_LEN];
 	int buff_stdin_i;
-
-	// Getting message from client
-	printf("\nMessage:\n"); fflush(stdout);
 
 	while(1){
 
@@ -91,8 +131,7 @@ int main(int argc, char *argv[]) {
 
 				case ECHO_SEND:
 					send_msg(socket_fd, &struct_msg, data);
-					printf("Message sent : %s\n", (char *) data);
-					free(data);
+					printf("[%s] %s\n", nick_name, (char *) data);
 					break;
 				
 				case CLIENT_QUIT:
@@ -108,8 +147,9 @@ int main(int argc, char *argv[]) {
 					break;
 			}
 
-			// Getting message from client
-			printf("\nMessage:\n"); fflush(stdout);
+			if(data != NULL){
+				free(data);
+			}
 
 			pollfds[0].revents = 0;
 		}
@@ -123,13 +163,23 @@ int main(int argc, char *argv[]) {
 			switch(receive_msg(socket_fd, &msg_struct, &data)){
 				
 				case ECHO_SEND:
-					printf("Message received : %s\n", (char *) data);
+					printf("[server] %s\n", (char *) data);
 					break;
 
 				case CLIENT_QUIT:
 					close(socket_fd);
 					printf("Server Deconnected\n");
 					exit(EXIT_SUCCESS);
+					break;
+
+				case NICKNAME_NEW:
+					if(strcmp(msg_struct.infos, "AlreadyUsed") == 0){
+						printf("Nickname already used. Try again.\n");
+						while(choose_nick_name(socket_fd)!=0);
+					}else{
+						strcpy(nick_name, msg_struct.infos);
+						printf("Nickname accepted : %s.\n", nick_name);
+					}
 					break;
 
 				default:

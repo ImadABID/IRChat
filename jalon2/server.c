@@ -106,7 +106,9 @@ int main(int argc, char *argv[]) {
 				char *ip_str = inet_ntoa(client_in->sin_addr);
 				c->host = malloc((strlen(ip_str)+1)*sizeof(char));
 				strcpy(c->host, ip_str);
-				
+				c->nickname = malloc(NICK_LEN * sizeof(char));
+				strcpy(c->nickname, "");
+
 				client_list_insert(client_list, c);
 
 				// Display Client info
@@ -132,7 +134,7 @@ int main(int argc, char *argv[]) {
 			}else if(pollfds[i].fd != sfd && pollfds[i].revents & POLLIN){
 				
 				struct client *c = client_list_get_client_by_fd(client_list, pollfds[i].fd);
-				printf("\n%s:%d :\n", c->host, c->port);
+				printf("\n%s@%s:%d :\n", c->nickname, c->host, c->port);
 
 				void *data = NULL;
 				struct message struct_msg;
@@ -157,6 +159,18 @@ int main(int argc, char *argv[]) {
 
 						// set pollfds[i].event = 0
 						pollfds[i].events = 0;
+
+						break;
+
+					case NICKNAME_NEW:
+						if(client_list_nickname_already_used(client_list, pollfds[i].fd, struct_msg.infos)){
+							printf("Problem detected\n");
+							strcpy(struct_msg.infos, "AlreadyUsed");
+						}else{
+							strcpy(c->nickname, struct_msg.infos);
+						}
+						
+						send_msg(pollfds[i].fd, &struct_msg, data);
 
 						break;
 

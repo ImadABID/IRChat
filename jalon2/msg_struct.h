@@ -1,3 +1,6 @@
+#ifndef __MSG_STRUCT_H__
+#define __MSG_STRUCT_H__
+
 #define NICK_LEN 128
 #define INFOS_LEN 128
 
@@ -48,3 +51,5 @@ static char* msg_type_str[] = {
 	"FILE_ACK"
 };
 */
+
+#endif

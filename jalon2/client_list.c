@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 struct client *client_new(){
     struct client *c = malloc(sizeof(struct client));
@@ -12,7 +13,12 @@ struct client *client_new(){
 }
 
 void client_free(struct client *c){
-    free(c->host);
+    if(c->host != NULL)
+        free(c->host);
+
+    if(c->nickname != NULL)
+        free(c->nickname);
+
     free(c);
 }
 
@@ -87,4 +93,18 @@ struct client *client_list_get_client_by_fd(struct client_list *cl, int fd){
     fprintf(stderr, "client_list_get_client_by_fd : No such client with fd = %d.\n", fd);
     exit(EXIT_FAILURE);
     
+}
+
+//nickname check
+char client_list_nickname_already_used(struct client_list *cl, int fd, char *nikname){
+    struct client *c = cl->first_client;
+
+    while(c != NULL){
+        if(c->fd != fd && strcmp(c->nickname, nikname) == 0){
+            return 1;
+        }
+        c = c->next;
+    }
+
+    return 0;
 }

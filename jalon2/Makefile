@@ -9,10 +9,10 @@ server_corr : server.c client_list msg_IO
 	gcc $(CFLAGS) -o server server.c client_list.o msg_IO.o 
 
 
-client_list : client_list.c client_list.h
+client_list : client_list.c client_list.h msg_struct.h
 	gcc $(CFLAGS) -o client_list.o -c client_list.c
 
-msg_IO : msg_IO.c msg_IO.h
+msg_IO : msg_IO.c msg_IO.h msg_struct.h
 	gcc $(CFLAGS) -o msg_IO.o -c msg_IO.c
 
 req_reader : req_reader.c req_reader.h
