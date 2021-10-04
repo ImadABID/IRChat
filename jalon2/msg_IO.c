@@ -4,19 +4,11 @@
 #include <unistd.h>
 
 #include "msg_IO.h"
-#include "socket_IO.h"
 
-void send_msg(int socket_fd, size_t pld_len, char *nick_sender, enum msg_type type, char *infos, void *data){
+void send_msg(int socket_fd, struct message *msg_struct, void *data){
     char *pi;
     int err;
     size_t send;
-
-    struct message msg_struct_val;
-    struct message *msg_struct = &msg_struct_val;
-    msg_struct->pld_len = pld_len;
-    strcpy(msg_struct->nick_sender, nick_sender);
-    msg_struct->type = type;
-    strcpy(msg_struct->infos, infos);
 
     pi = (char *) msg_struct;
     send = 0;
@@ -30,11 +22,11 @@ void send_msg(int socket_fd, size_t pld_len, char *nick_sender, enum msg_type ty
         }
     }
 
-    if(pld_len > 0){
+    if(msg_struct->pld_len > 0){
         pi = (char *) data;
         send = 0;
-        while (send != pld_len){
-            err = write(socket_fd, pi+send, pld_len-send);
+        while (send != msg_struct->pld_len){
+            err = write(socket_fd, pi+send, msg_struct->pld_len-send);
             if(err == -1){
                 perror("write");
                 exit(EXIT_FAILURE);
@@ -45,10 +37,7 @@ void send_msg(int socket_fd, size_t pld_len, char *nick_sender, enum msg_type ty
     }
 }
 
-struct message receive_msg(int socket_fd, void **data){
-    
-    struct message msg_struct_val;
-    struct message *msg_struct = &msg_struct_val;
+enum msg_type receive_msg(int socket_fd, struct message *msg_struct, void **data){
 
     const unsigned int max_read_attempt = 10;
     unsigned int attempt_nbr;
@@ -103,5 +92,6 @@ struct message receive_msg(int socket_fd, void **data){
         *data = NULL;
     }
 
-    return msg_struct_val;
+    return msg_struct->type;
+
 }

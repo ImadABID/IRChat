@@ -5,17 +5,10 @@
 
 #include "msg_struct.h"
 
-void send_msg(
-    int socket_fd,
-    size_t pld_len,
-    char *nick_sender,
-    enum msg_type type,
-    char *infos,
-    void *data
-);
+void send_msg(int socket_fd, struct message *msg_struct, void *data);
 
 
-struct message receive_msg(int socket_fd, void **data);
+enum msg_type receive_msg(int socket_fd, struct message *msg_struct, void **data);
 /*
     free data after use.
 */

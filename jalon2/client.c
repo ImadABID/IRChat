@@ -10,102 +10,7 @@
 
 #include "common.h"
 #include "msg_IO.h"
-
-char echo_client(int socket_fd) {
-	/*
-
-	Return value :
-	0 : every thing is ok
-	1 : connection closed by client
-	2 : connection closed by server
-
-	*/
-
-	struct pollfd pollfds[2];
-	pollfds[0].fd = STDIN_FILENO;
-	pollfds[0].events = POLLIN;
-	pollfds[0].revents = 0;
-	pollfds[1].fd = socket_fd;
-	pollfds[1].events = POLLIN;
-	pollfds[1].revents = 0;
-
-	char buff_stdin[MSG_LEN];
-	int buff_stdin_i;
-
-	// Getting message from client
-	printf("\nMessage:\n"); fflush(stdout);
-
-	while (1) {
-
-		int n_active;
-		if(-1 == (n_active = poll(pollfds, 2, POLL_TIMEOUT))){
-			perror("Poll");
-		}
-
-		if(pollfds[0].revents & POLLIN){
-
-			// buffer index
-			memset(buff_stdin, 0, MSG_LEN);
-			buff_stdin_i = 0;
-
-			char c = getchar();
-			while(c != '\n'){
-				buff_stdin[buff_stdin_i++] = c;
-				c = getchar();
-			}
-
-			buff_stdin[buff_stdin_i++] = '\0';
-
-			// sending msg
-
-			send_msg(
-				socket_fd,
-				buff_stdin_i,
-				"Imad_555",
-				ECHO_SEND,
-				"NoInfo",
-				(void *) buff_stdin
-			);
-			printf("Message sent! %s\n", buff_stdin);
-
-			// Verify if /quit
-			if(strcmp(buff_stdin, "/quit") == 0){
-				return 1;
-			}
-
-			// Getting message from client
-			printf("\nMessage:\n"); fflush(stdout);
-
-			pollfds[0].revents = 0;
-		}
-
-		if(pollfds[1].revents & POLLIN){
-
-			// Receiving message
-			void *buff_sockin = NULL;
-			struct message msg_struct = receive_msg(socket_fd, &buff_sockin);
-
-			/*
-			if(strcmp(buff_sockin, "/quit") == 0){
-				free(buff_sockin);
-				return 2;
-			}
-			*/
-
-			printf("Received: %s\n", (char *) buff_sockin);
-			free(buff_sockin);
-
-			pollfds[1].revents = 0;
-		}
-
-		if(pollfds[1].revents & POLLHUP){
-			return 2;
-		}
-		
-	}
-
-	return 0;
-}
+#include "req_reader.h"
 
 int handle_connect(char host[], char port[]){
 	struct addrinfo hints, *result, *rp;
@@ -142,22 +47,108 @@ int main(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	int sfd;
-	sfd = handle_connect(argv[1], argv[2]);
-	
-	switch(echo_client(sfd)){
-		case 1:
-			printf("Connection closed succesfully\n");
-			break;
+	int socket_fd = handle_connect(argv[1], argv[2]);
 
-		case 2:
-			printf("Connection closed by the server\n");
-			break;
+	struct pollfd pollfds[2];
+	pollfds[0].fd = STDIN_FILENO;
+	pollfds[0].events = POLLIN;
+	pollfds[0].revents = 0;
+	pollfds[1].fd = socket_fd;
+	pollfds[1].events = POLLIN;
+	pollfds[1].revents = 0;
 
-		default :
-			break;
+	char buff_stdin[MSG_LEN];
+	int buff_stdin_i;
+
+	// Getting message from client
+	printf("\nMessage:\n"); fflush(stdout);
+
+	while(1){
+
+		int n_active;
+		if(-1 == (n_active = poll(pollfds, 2, POLL_TIMEOUT))){
+			perror("Poll");
+		}
+
+		if(pollfds[0].revents & POLLIN){
+
+			// buffer index
+			memset(buff_stdin, 0, MSG_LEN);
+			buff_stdin_i = 0;
+
+			char c = getchar();
+			while(c != '\n'){
+				buff_stdin[buff_stdin_i++] = c;
+				c = getchar();
+			}
+
+			buff_stdin[buff_stdin_i++] = '\0';
+
+			// Understaing request
+			struct message struct_msg;
+			void *data;
+			switch (req_reader(buff_stdin, &struct_msg, &data)){
+				case UKNOWN:
+					printf("Request is not valid.\n");
+					break;
+				
+				case CLIENT_QUIT:
+
+					send_msg(socket_fd, &struct_msg, data);
+
+					close(socket_fd);
+					printf("Deconnected\n");
+					exit(EXIT_SUCCESS);
+					break;
+
+				default:
+					break;
+			}
+
+			// Getting message from client
+			printf("\nMessage:\n"); fflush(stdout);
+
+			pollfds[0].revents = 0;
+		}
+
+		if(pollfds[1].revents & POLLIN){
+
+			// Receiving message
+			void *buff_sockin = NULL;
+			struct message msg_struct;
+
+			switch(receive_msg(socket_fd, &msg_struct, &buff_sockin)){
+				case CLIENT_QUIT:
+					close(socket_fd);
+					printf("Server Deconnected\n");
+					exit(EXIT_SUCCESS);
+					break;
+
+				default:
+					break;
+			}
+
+			/*
+			if(strcmp(buff_sockin, "/quit") == 0){
+				free(buff_sockin);
+				return 2;
+			}
+			*/
+
+			printf("Received: %s\n", (char *) buff_sockin);
+			free(buff_sockin);
+
+			pollfds[1].revents = 0;
+		}
+
+		if(pollfds[1].revents & POLLHUP){
+			close(socket_fd);
+			printf("Server Deconnected\n");
+			exit(EXIT_SUCCESS);
+		}
+		
 	}
 	
-	close(sfd);
+	close(socket_fd);
 	return EXIT_SUCCESS;
 }

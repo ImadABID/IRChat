@@ -12,22 +12,9 @@
 #include "client_list.h"
 #include "msg_IO.h"
 
+/*
 void echo_server(int socket_fd, struct message struct_msg, void *data) {
-	/*
 
-	Return value :
-	0 : every thing is ok
-	1 : connection closed by client
-
-	*/
-
-	// Handling connection closing
-	/*
-	if(strcmp(buff, "/quit") == 0){
-		free(buff);
-		return 1;
-	}
-	*/
 
 	printf("\tReceived: %s\n", (char *)data);
 	
@@ -43,6 +30,7 @@ void echo_server(int socket_fd, struct message struct_msg, void *data) {
 
 	printf("\tMessage sent!\n");
 }
+*/
 
 int handle_bind(char port[]) {
 	struct addrinfo hints, *result, *rp;
@@ -154,8 +142,6 @@ int main(int argc, char *argv[]) {
 				close(pollfds[i].fd);
 				client_list_drop_client_by_fd(client_list, pollfds[i].fd);
 				pollfds[i].fd = -1;
-				pollfds[i].events = 0;
-				pollfds[i].revents = 0;
 
 				// set pollfds[i].event = 0
 				pollfds[i].events = 0;
@@ -168,11 +154,13 @@ int main(int argc, char *argv[]) {
 				printf("\n%s:%d :\n", c->host, c->port);
 
 				void *data = NULL;
-				struct message struct_msg = receive_msg(pollfds[i].fd, &data);
+				struct message struct_msg;
+				
 
-				switch (struct_msg.type){
+				switch (receive_msg(pollfds[i].fd, &struct_msg, &data)){
+					/*
 					case ECHO_SEND:
-						/*
+						
 						switch(echo_server(pollfds[i].fd)){
 							case 1:
 								close(pollfds[i].fd);
@@ -186,11 +174,26 @@ int main(int argc, char *argv[]) {
 							default :
 								break;
 						}
-						*/
+						
 						echo_server(pollfds[i].fd, struct_msg, data);
 
 						break;
-					
+					*/
+
+					case CLIENT_QUIT:
+						// display message on terminal
+						printf("Client in fd = %d deconnected\n", pollfds[i].fd);
+						
+						//close(pollfd[i].fd)
+						close(pollfds[i].fd);
+						client_list_drop_client_by_fd(client_list, pollfds[i].fd);
+						pollfds[i].fd = -1;
+
+						// set pollfds[i].event = 0
+						pollfds[i].events = 0;
+
+						break;
+
 					default:
 						break;
 				}
@@ -198,7 +201,9 @@ int main(int argc, char *argv[]) {
 				if(data != NULL){
 					free(data);
 				}
-
+				
+				//set pollfds[i].revent = 0
+				pollfds[i].revents = 0;
 			}
 		}
 	}
