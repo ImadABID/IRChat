@@ -12,25 +12,6 @@
 #include "client_list.h"
 #include "msg_IO.h"
 
-/*
-void echo_server(int socket_fd, struct message struct_msg, void *data) {
-
-
-	printf("\tReceived: %s\n", (char *)data);
-	
-	// Sending message (ECHO)
-	send_msg(
-		socket_fd,
-		struct_msg.pld_len,
-		"server",
-		ECHO_SEND,
-		"Noinfo",
-		data
-	);
-
-	printf("\tMessage sent!\n");
-}
-*/
 
 int handle_bind(char port[]) {
 	struct addrinfo hints, *result, *rp;
@@ -158,27 +139,12 @@ int main(int argc, char *argv[]) {
 				
 
 				switch (receive_msg(pollfds[i].fd, &struct_msg, &data)){
-					/*
+
 					case ECHO_SEND:
-						
-						switch(echo_server(pollfds[i].fd)){
-							case 1:
-								close(pollfds[i].fd);
-								client_list_drop_client_by_fd(client_list, pollfds[i].fd);
-								pollfds[i].fd = -1;
-								pollfds[i].events = 0;
-								pollfds[i].revents = 0;
-								printf("\tConnection was closed by the client.\n");
-								break;
-
-							default :
-								break;
-						}
-						
-						echo_server(pollfds[i].fd, struct_msg, data);
-
+						printf("\tMessage received : %s\n", (char *) data);
+						send_msg(pollfds[i].fd, &struct_msg, data);
+						printf("\tSending message back : %s\n", (char *) data);
 						break;
-					*/
 
 					case CLIENT_QUIT:
 						// display message on terminal
@@ -201,7 +167,7 @@ int main(int argc, char *argv[]) {
 				if(data != NULL){
 					free(data);
 				}
-				
+
 				//set pollfds[i].revent = 0
 				pollfds[i].revents = 0;
 			}

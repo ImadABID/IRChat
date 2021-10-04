@@ -88,8 +88,11 @@ int main(int argc, char *argv[]) {
 			struct message struct_msg;
 			void *data;
 			switch (req_reader(buff_stdin, &struct_msg, &data)){
-				case UKNOWN:
-					printf("Request is not valid.\n");
+
+				case ECHO_SEND:
+					send_msg(socket_fd, &struct_msg, data);
+					printf("Message sent : %s\n", (char *) data);
+					free(data);
 					break;
 				
 				case CLIENT_QUIT:
@@ -114,10 +117,15 @@ int main(int argc, char *argv[]) {
 		if(pollfds[1].revents & POLLIN){
 
 			// Receiving message
-			void *buff_sockin = NULL;
+			void *data = NULL;
 			struct message msg_struct;
 
-			switch(receive_msg(socket_fd, &msg_struct, &buff_sockin)){
+			switch(receive_msg(socket_fd, &msg_struct, &data)){
+				
+				case ECHO_SEND:
+					printf("Message received : %s\n", (char *) data);
+					break;
+
 				case CLIENT_QUIT:
 					close(socket_fd);
 					printf("Server Deconnected\n");
@@ -128,15 +136,9 @@ int main(int argc, char *argv[]) {
 					break;
 			}
 
-			/*
-			if(strcmp(buff_sockin, "/quit") == 0){
-				free(buff_sockin);
-				return 2;
+			if(data != NULL){
+				free(data);
 			}
-			*/
-
-			printf("Received: %s\n", (char *) buff_sockin);
-			free(buff_sockin);
 
 			pollfds[1].revents = 0;
 		}
