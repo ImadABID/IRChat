@@ -12,43 +12,78 @@
 #include "msg_IO.h"
 #include "req_reader.h"
 
-char nick_name[NICK_LEN];
 
-int choose_nick_name(int socket_fd){
-	printf("Choose a nickname : ");
+char nick_name_validate(char nick_name_[]){
 
-	char nick_name_[NICK_LEN];
 	size_t nikname_len = 0;
-	char c = getchar();
-	while(c != '\n'){
+	char c = nick_name_[0];
+	while(c != '\0'){
 		if(!(('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9'))){
 			printf("Nikname shouldn't contain special characters. Try again.\n");
-			return -1;
+			return 0;
 		}
-		nick_name_[nikname_len++] = c;
-		c = getchar();
+		c = nick_name_[nikname_len++];
 		if(nikname_len > NICK_LEN-1){
 			printf("Nikname too long. Try again.\n");
-			return -1;
+			return 0;
 		}
 	}
-
-	nick_name_[nikname_len++] = '\0';
+	nikname_len++;
 
 	if(nikname_len==1){
 		printf("Nikname can't be an empty string. Try again.\n");
-		return -1;
+		return 0;
 	}
 
+	return 1;
+}
+
+void nickname_set_1st_time(int socket_fd){
+
+	char buff_stdin[MSG_LEN];
+	int buff_stdin_i;
+	char c;
+
+	printf("Choose a nikname. Ex : /nick Bond007\n");
+	c = getchar();
+	buff_stdin_i = 0;
+	while(c != '\n'){
+		buff_stdin[buff_stdin_i++] = c;
+		c = getchar();
+	}
+	buff_stdin[buff_stdin_i++] = '\0';
+
 	struct message struct_msg;
-	struct_msg.pld_len = 0;
-	strcpy(struct_msg.nick_sender, nick_name);
-	struct_msg.type = NICKNAME_NEW;
-	strcpy(struct_msg.infos, nick_name_);
+	void *data;
+	char repeat = 1;
+	while(repeat){
+		while(req_reader(buff_stdin, &struct_msg, &data) != NICKNAME_NEW){
+			if(data != NULL){
+				free(data);
+			}
+			printf("Choose a nickname. Ex : /nick Bond007\n");
+			c = getchar();
+			buff_stdin_i = 0;
+			while(c != '\n'){
+				buff_stdin[buff_stdin_i++] = c;
+				c = getchar();
+			}
+			buff_stdin[buff_stdin_i++] = '\0';
+		}
+		if(nick_name_validate(struct_msg.infos)){
+			repeat = 0;
+			send_msg(socket_fd, &struct_msg, data);
+		}else{
+			c = getchar();
+			buff_stdin_i = 0;
+			while(c != '\n'){
+				buff_stdin[buff_stdin_i++] = c;
+				c = getchar();
+			}
+			buff_stdin[buff_stdin_i++] = '\0';
+		}
 
-	send_msg(socket_fd, &struct_msg, NULL);
-
-	return 0;
+	}
 }
 
 int handle_connect(char host[], char port[]){
@@ -86,11 +121,16 @@ int main(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
+	char buff_stdin[MSG_LEN];
+	int buff_stdin_i;
+	char c;
+
 	int socket_fd = handle_connect(argv[1], argv[2]);
 
-	//Choosing Nickname
+	//Set Nickname
 	strcpy(nick_name, "");
-	while(choose_nick_name(socket_fd)!=0);
+	nickname_set_1st_time(socket_fd);
+	
 
 	struct pollfd pollfds[2];
 	pollfds[0].fd = STDIN_FILENO;
@@ -100,9 +140,6 @@ int main(int argc, char *argv[]) {
 	pollfds[1].events = POLLIN;
 	pollfds[1].revents = 0;
 
-	char buff_stdin[MSG_LEN];
-	int buff_stdin_i;
-
 	while(1){
 
 		int n_active;
@@ -110,13 +147,13 @@ int main(int argc, char *argv[]) {
 			perror("Poll");
 		}
 
-		if(pollfds[0].revents & POLLIN){
+		if(pollfds[0].revents & POLLIN){ // stdin
 
 			// buffer index
 			memset(buff_stdin, 0, MSG_LEN);
 			buff_stdin_i = 0;
 
-			char c = getchar();
+			c = getchar();
 			while(c != '\n'){
 				buff_stdin[buff_stdin_i++] = c;
 				c = getchar();
@@ -154,7 +191,7 @@ int main(int argc, char *argv[]) {
 			pollfds[0].revents = 0;
 		}
 
-		if(pollfds[1].revents & POLLIN){
+		if(pollfds[1].revents & POLLIN){ // socket
 
 			// Receiving message
 			void *data = NULL;
@@ -175,7 +212,7 @@ int main(int argc, char *argv[]) {
 				case NICKNAME_NEW:
 					if(strcmp(msg_struct.infos, "AlreadyUsed") == 0){
 						printf("Nickname already used. Try again.\n");
-						while(choose_nick_name(socket_fd)!=0);
+						nickname_set_1st_time(socket_fd);
 					}else{
 						strcpy(nick_name, msg_struct.infos);
 						printf("Nickname accepted : %s.\n", nick_name);

@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -6,8 +7,17 @@
 enum msg_type req_reader(char *req, struct message *struct_msg, void **data){
     // /nick, /who, /whois , /msgall , /msg, /quit
 
-    if(strncmp( req, "/nick ", 6) == 0){
+    if(strncmp(req, "/nick ", 6) == 0){
 
+        struct_msg->pld_len = 0;
+        strcpy(struct_msg->nick_sender, nick_name);
+        struct_msg->type = NICKNAME_NEW;
+        strcpy(struct_msg->infos, req+6);
+
+        *data = NULL;
+
+        return NICKNAME_NEW;
+        
     }
 
     if(strncmp( req, "/who ", 5) == 0){
@@ -39,7 +49,7 @@ enum msg_type req_reader(char *req, struct message *struct_msg, void **data){
     *data = malloc((strlen(req)+1)*sizeof(char));
     strcpy(*data, req);
     struct_msg->pld_len = strlen(req)+1;
-    strcpy(struct_msg->nick_sender, "");
+    strcpy(struct_msg->nick_sender, nick_name);
     struct_msg->type = ECHO_SEND;
     strcpy(struct_msg->infos, "");
     return ECHO_SEND;
