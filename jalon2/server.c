@@ -150,7 +150,7 @@ int main(int argc, char *argv[]) {
 
 					case CLIENT_QUIT:
 						// display message on terminal
-						printf("Client in fd = %d deconnected\n", pollfds[i].fd);
+						printf("\tDeconnected\n");
 						
 						//close(pollfd[i].fd)
 						close(pollfds[i].fd);
@@ -163,11 +163,13 @@ int main(int argc, char *argv[]) {
 						break;
 
 					case NICKNAME_NEW:
+						printf("\tSetting nickname : \n\t %s -> %s\n", struct_msg.nick_sender, struct_msg.infos);
 						if(client_list_nickname_already_used(client_list, pollfds[i].fd, struct_msg.infos)){
-							printf("Problem detected\n");
 							strcpy(struct_msg.infos, "AlreadyUsed");
+							printf("\tOperation rejected : nick name already used.\n");
 						}else{
 							strcpy(c->nickname, struct_msg.infos);
+							printf("\tOperation accepted.\n");
 						}
 						
 						send_msg(pollfds[i].fd, &struct_msg, data);

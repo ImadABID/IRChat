@@ -170,6 +170,10 @@ int main(int argc, char *argv[]) {
 					send_msg(socket_fd, &struct_msg, data);
 					printf("[%s] %s\n", nick_name, (char *) data);
 					break;
+
+				case NICKNAME_NEW:
+					send_msg(socket_fd, &struct_msg, data);
+					break;
 				
 				case CLIENT_QUIT:
 
@@ -211,8 +215,12 @@ int main(int argc, char *argv[]) {
 
 				case NICKNAME_NEW:
 					if(strcmp(msg_struct.infos, "AlreadyUsed") == 0){
-						printf("Nickname already used. Try again.\n");
-						nickname_set_1st_time(socket_fd);
+						if(strcmp(nick_name, "") == 0){
+							printf("Nickname already used. Try again.\n");
+							nickname_set_1st_time(socket_fd);
+						}else{
+							printf("Nickname already used. Operation rejected.\n");
+						}
 					}else{
 						strcpy(nick_name, msg_struct.infos);
 						printf("Nickname accepted : %s.\n", nick_name);
@@ -226,6 +234,8 @@ int main(int argc, char *argv[]) {
 			if(data != NULL){
 				free(data);
 			}
+
+			printf("\n");
 
 			pollfds[1].revents = 0;
 		}
