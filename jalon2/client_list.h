@@ -17,6 +17,8 @@ struct client{
 
 struct client_list{
     struct client *first_client;
+
+    unsigned int client_nbr;
 };
 
 // Client

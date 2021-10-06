@@ -33,6 +33,7 @@ void client_recursive_free(struct client *c){
 struct client_list *client_list_new(){
     struct client_list *cl = malloc(sizeof(struct client_list));
     cl->first_client = NULL;
+    cl->client_nbr = 0;
 
     return cl;
 }
@@ -45,6 +46,7 @@ void client_list_free(struct client_list *cl){
 void client_list_insert(struct client_list *cl, struct client *c){
     c->next = cl->first_client;
     cl->first_client = c;
+    cl->client_nbr++;
 }
 
 void client_list_drop_client_by_fd(struct client_list *cl, int fd){
@@ -76,6 +78,8 @@ void client_list_drop_client_by_fd(struct client_list *cl, int fd){
     }
 
     client_free(c);
+
+    cl->client_nbr--;
 
 }
 
