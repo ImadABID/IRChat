@@ -176,6 +176,22 @@ int main(int argc, char *argv[]) {
 
 						break;
 
+					case NICKNAME_LIST:
+						struct_msg.pld_len = client_list->client_nbr * NICK_LEN;
+						strcpy(struct_msg.nick_sender, "Server");
+						// Just in case the client send data
+						if(data != NULL){
+							free(data);
+						}
+						data = malloc(struct_msg.pld_len * sizeof(char));
+						client_list_niknames_as_array(client_list, (char *) data);
+
+						send_msg(pollfds[i].fd, &struct_msg, data);
+
+						break;
+						
+
+
 					default:
 						break;
 				}

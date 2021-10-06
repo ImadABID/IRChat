@@ -20,8 +20,17 @@ enum msg_type req_reader(char *req, struct message *struct_msg, void **data){
         
     }
 
-    if(strncmp( req, "/who ", 5) == 0){
-        
+    if(strncmp( req, "/who", 4) == 0){
+
+        struct_msg->pld_len = 0;
+        strcpy(struct_msg->nick_sender, nick_name);
+        struct_msg->type = NICKNAME_LIST;
+        strcpy(struct_msg->infos, "");
+
+        *data = NULL;
+
+        return NICKNAME_LIST;
+
     }
 
     if(strncmp( req, "/whois ", 7) == 0){

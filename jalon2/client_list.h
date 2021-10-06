@@ -40,5 +40,7 @@ struct client *client_list_get_client_by_fd(struct client_list *cl, int fd);
 //nickname check
 char client_list_nickname_already_used(struct client_list *cl, int fd, char *nikname);
 
+// Get nicknames in an array
+void client_list_niknames_as_array(struct client_list *cl, char *buff);
 
 #endif

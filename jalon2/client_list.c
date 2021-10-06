@@ -112,3 +112,14 @@ char client_list_nickname_already_used(struct client_list *cl, int fd, char *nik
 
     return 0;
 }
+
+// Get nicknames in an array
+void client_list_niknames_as_array(struct client_list *cl, char *buff){
+    int i = 0;
+    struct client *c = cl->first_client;
+    while(c != NULL){
+        strcpy(buff+i*NICK_LEN, c->nickname);
+        c = c->next;
+        i++;
+    }
+}
