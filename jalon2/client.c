@@ -178,6 +178,10 @@ int main(int argc, char *argv[]) {
 				case NICKNAME_LIST:
 					send_msg(socket_fd, &struct_msg, data);
 					break;
+
+				case NICKNAME_INFOS:
+					send_msg(socket_fd, &struct_msg, data);
+					break;
 				
 				case CLIENT_QUIT:
 
@@ -204,6 +208,7 @@ int main(int argc, char *argv[]) {
 			// Receiving message
 			void *data = NULL;
 			struct message msg_struct;
+			struct whois_data *client_data = NULL;
 
 			switch(receive_msg(socket_fd, &msg_struct, &data)){
 				
@@ -237,6 +242,19 @@ int main(int argc, char *argv[]) {
 						printf("\t%s\n", ((char *) data)+i);
 					}
 					break;
+
+				case NICKNAME_INFOS:
+
+					client_data = (struct whois_data *) data;
+
+					printf("[Server] :\n");
+					printf("\tNickname \t\t: %s\n", client_data->nickname);
+					printf("\tConnected since \t: %s\n", client_data->date);
+					printf("\tAddress \t\t: %s\n", client_data->address);
+					printf("\tPort \t\t\t: %d\n", client_data->port);
+					
+					break;
+					
 
 				default:
 					break;

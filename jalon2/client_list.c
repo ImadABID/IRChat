@@ -19,6 +19,9 @@ void client_free(struct client *c){
     if(c->nickname != NULL)
         free(c->nickname);
 
+    if(c->connecion_time != NULL)
+        free(c->connecion_time);
+
     free(c);
 }
 
@@ -97,6 +100,20 @@ struct client *client_list_get_client_by_fd(struct client_list *cl, int fd){
     fprintf(stderr, "client_list_get_client_by_fd : No such client with fd = %d.\n", fd);
     exit(EXIT_FAILURE);
     
+}
+
+struct client *client_list_get_client_by_nickname(struct client_list *cl, char *nickname_){
+    struct client *c = cl->first_client;
+
+    while(c != NULL){
+        if(strcmp(c->nickname, nickname_) == 0){
+            return c;
+        }
+        c = c->next;
+    }
+
+    fprintf(stderr, "client_list_get_client_by_nickname : No such client with nickname = %s.\n", nickname_);
+    exit(EXIT_FAILURE);
 }
 
 //nickname check

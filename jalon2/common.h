@@ -8,9 +8,18 @@
 #define MAX_CLIENTS 100
 #define POLL_TIMEOUT 3000
 
+#define STR_MAX_SIZE 124
+
 struct info{
     short s;
     long l;
+};
+
+struct whois_data{
+    char nickname[STR_MAX_SIZE];
+    char address[STR_MAX_SIZE];
+    unsigned short port;
+    char date[STR_MAX_SIZE];
 };
 
 #endif

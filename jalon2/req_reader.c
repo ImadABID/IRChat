@@ -20,7 +20,7 @@ enum msg_type req_reader(char *req, struct message *struct_msg, void **data){
         
     }
 
-    if(strncmp( req, "/who", 4) == 0){
+    if(strcmp(req, "/who") == 0){
 
         struct_msg->pld_len = 0;
         strcpy(struct_msg->nick_sender, nick_name);
@@ -33,19 +33,26 @@ enum msg_type req_reader(char *req, struct message *struct_msg, void **data){
 
     }
 
-    if(strncmp( req, "/whois ", 7) == 0){
+    if(strncmp(req, "/whois ", 7) == 0){
+        struct_msg->pld_len = 0;
+        strcpy(struct_msg->nick_sender, nick_name);
+        struct_msg->type = NICKNAME_INFOS;
+        strcpy(struct_msg->infos, req+7);
+
+        *data = NULL;
+
+        return NICKNAME_INFOS;
+    }
+
+    if(strncmp(req, "/msgall ", 8) == 0){
         
     }
 
-    if(strncmp( req, "/msgall ", 8) == 0){
+    if(strncmp(req, "/msg ", 5) == 0){
         
     }
 
-    if(strncmp( req, "/msg ", 5) == 0){
-        
-    }
-
-    if(strncmp( req, "/quit", 5) == 0){
+    if(strncmp(req, "/quit", 5) == 0){
         *data = NULL;
         struct_msg->pld_len = 0;
         strcpy(struct_msg->nick_sender,"");

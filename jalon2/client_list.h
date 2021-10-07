@@ -2,6 +2,7 @@
 #define __CLIENTS_LIST_H__
 
 #include "msg_struct.h"
+#include "common.h"
 
 struct client{
 
@@ -10,6 +11,8 @@ struct client{
     unsigned short port;
 
     char *nickname;
+
+    char *connecion_time;
     
     struct client *next;
     
@@ -36,6 +39,7 @@ void client_list_drop_client_by_fd(struct client_list *cl, int fd);
 
 // Getters
 struct client *client_list_get_client_by_fd(struct client_list *cl, int fd);
+struct client *client_list_get_client_by_nickname(struct client_list *cl, char *nickname_);
 
 //nickname check
 char client_list_nickname_already_used(struct client_list *cl, int fd, char *nikname);

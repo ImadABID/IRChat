@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <poll.h>
+#include <time.h>
 
 #include "common.h"
 #include "client_list.h"
@@ -108,11 +109,19 @@ int main(int argc, char *argv[]) {
 				strcpy(c->host, ip_str);
 				c->nickname = malloc(NICK_LEN * sizeof(char));
 				strcpy(c->nickname, "");
+				
+				time_t timestamp = time(NULL);
+    			struct tm * pTime = localtime(&timestamp); 
+				char date_str[STR_MAX_SIZE];
+    			strftime(date_str, STR_MAX_SIZE, "%d/%m/%Y %H:%M:%S", pTime);
+
+				c->connecion_time = malloc(sizeof(char)*(strlen(date_str)+1));
+				strcpy(c->connecion_time, date_str);
 
 				client_list_insert(client_list, c);
 
 				// Display Client info
-				printf("%s:%d :\n\tConnection accepted.\n", c->host, c->port);
+				printf("%s:%d :\n\tConnection accepted at %s.\n", c->host, c->port, c->connecion_time);
 
 				// set pollfd[i].revent = 0
 				pollfds[i].revents = 0;
@@ -177,19 +186,45 @@ int main(int argc, char *argv[]) {
 						break;
 
 					case NICKNAME_LIST:
+						printf("\t/who\n");
 						struct_msg.pld_len = client_list->client_nbr * NICK_LEN;
 						strcpy(struct_msg.nick_sender, "Server");
 						// Just in case the client send data
 						if(data != NULL){
 							free(data);
 						}
+
 						data = malloc(struct_msg.pld_len * sizeof(char));
 						client_list_niknames_as_array(client_list, (char *) data);
 
 						send_msg(pollfds[i].fd, &struct_msg, data);
+						printf("\tResponse was sent.\n");
 
 						break;
 						
+					case NICKNAME_INFOS:
+						printf("\t/whois %s\n", struct_msg.infos);
+
+						struct_msg.pld_len = sizeof(struct whois_data);
+						strcpy(struct_msg.nick_sender, "Server");
+
+						struct client *target_client = client_list_get_client_by_nickname(client_list, struct_msg.infos);
+						struct whois_data *client_data = malloc(sizeof(struct whois_data));
+						strcpy(client_data->nickname, target_client->nickname);
+						strcpy(client_data->date, target_client->connecion_time);
+						strcpy(client_data->address, target_client->host);
+						client_data->port = target_client->port;
+
+						send_msg(pollfds[i].fd, &struct_msg, client_data);
+						printf("\tResponse was sent.\n");
+
+						// Just in case the client send data
+						if(data != NULL){
+							free(data);
+						}
+						data = (void *) client_data;
+
+						break;
 
 
 					default:
