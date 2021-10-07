@@ -51,12 +51,14 @@ enum msg_type receive_msg(int socket_fd, struct message *msg_struct, void **data
     while (received != sizeof(struct message)){
         err = read(socket_fd, pi+received, sizeof(struct message)-received);
         if(err == -1){
-            perror("write");
-            exit(EXIT_FAILURE);
+            perror("\twrite");
+            *data = NULL;
+            return CLIENT_QUIT;
         }else if(err == 0){
             if(attempt_nbr++ < max_read_attempt){
-                fprintf(stderr, "receive_msg : max read attempt reachted.\n");
-                exit(EXIT_FAILURE);
+                fprintf(stderr, "\treceive_msg : max read attempt reachted.\n");
+                *data = NULL;
+                return CLIENT_QUIT;
             }
         }else{
             received += err;
@@ -76,11 +78,15 @@ enum msg_type receive_msg(int socket_fd, struct message *msg_struct, void **data
             err = read(socket_fd, pi+received, msg_struct->pld_len-received);
             if(err == -1){
                 perror("write");
-                exit(EXIT_FAILURE);
+                free(pi);
+                *data = NULL;
+                return CLIENT_QUIT;
             }else if(err == 0){
                 if(attempt_nbr++ < max_read_attempt){
                     fprintf(stderr, "receive_msg : max read attempt reachted.\n");
-                    exit(EXIT_FAILURE);
+                    free(pi);
+                    *data = NULL;
+                    return CLIENT_QUIT;
                 }
             }else{
                 received += err;
