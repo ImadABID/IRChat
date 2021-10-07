@@ -58,7 +58,26 @@ enum msg_type req_reader(char *req, struct message *struct_msg, void **data){
     }
 
     if(strncmp(req, "/msg ", 5) == 0){
+
+        size_t req_index = 5;
+
+        while(req[req_index] != ' '){
+            if(req[req_index++] == '\0'){
+                *data = NULL;
+                return UNICAST_SEND;
+            }
+        }
+
+        struct_msg->pld_len = (strlen(req+req_index)+1)*sizeof(char);
+        strcpy(struct_msg->nick_sender, nick_name);
+        struct_msg->type = UNICAST_SEND;
+        strncpy(struct_msg->infos, req+5, req_index-5);
+        struct_msg->infos[req_index-5] = '\0';
+
+        *data = malloc(struct_msg->pld_len);
+        strcpy(*data, req+req_index);
         
+        return UNICAST_SEND;
     }
 
     if(strncmp(req, "/quit", 5) == 0){

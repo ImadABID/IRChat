@@ -256,6 +256,33 @@ int main(int argc, char *argv[]) {
 
 						break;
 
+					case UNICAST_SEND:
+
+						printf("\t/msg %s %s\n", struct_msg.infos, (char *) data);
+						client_rcv = client_list_get_client_by_nickname(client_list, struct_msg.infos);
+						if(client_rcv == NULL){
+							if(data != NULL){
+								free(data);
+							}
+							
+							char msg_error[] = "Error : No user with such nickname.";
+
+							struct_msg.pld_len = sizeof(char)*(strlen(msg_error)+1);
+							strcpy(struct_msg.nick_sender,"Server");
+
+							data = malloc(struct_msg.pld_len);
+							strcpy(data, msg_error);
+
+							send_msg(pollfds[i].fd, &struct_msg, data);
+							printf("\t%s\n", (char *) data);
+
+						}else{
+							send_msg(client_rcv->fd, &struct_msg, data);
+							printf("\tMessage sent to %s\n", client_rcv->nickname);
+						}
+
+						break;
+
 					default:
 						break;
 				}

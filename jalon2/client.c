@@ -187,6 +187,16 @@ int main(int argc, char *argv[]) {
 					send_msg(socket_fd, &struct_msg, data);
 					printf("[%s]->[All] : %s\n\n", nick_name, (char *) data);
 					break;
+
+				case UNICAST_SEND:
+					if(data == NULL){
+						printf("Syntax Error. /msg Syntax :\n\t/msg receiverNickname the message you want to send\n");
+					}else{
+						printf("[%s]->[%s] : %s\n\n", nick_name, struct_msg.infos, (char *) data);
+						send_msg(socket_fd, &struct_msg, data);
+					}
+
+					break;
 				
 				case CLIENT_QUIT:
 
@@ -270,6 +280,9 @@ int main(int argc, char *argv[]) {
 					printf("[%s]->[All] %s\n", msg_struct.nick_sender, (char *) data);
 					break;
 
+				case UNICAST_SEND:
+					printf("[%s]->[%s] %s\n", msg_struct.nick_sender, nick_name, (char *) data);
+					break;
 
 				default:
 					break;
