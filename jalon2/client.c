@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) {
 
 				case ECHO_SEND:
 					send_msg(socket_fd, &struct_msg, data);
-					printf("[%s] %s\n", nick_name, (char *) data);
+					printf("[%s]->[Server] : %s\n", nick_name, (char *) data);
 					break;
 
 				case NICKNAME_NEW:
@@ -181,6 +181,11 @@ int main(int argc, char *argv[]) {
 
 				case NICKNAME_INFOS:
 					send_msg(socket_fd, &struct_msg, data);
+					break;
+
+				case BROADCAST_SEND:
+					send_msg(socket_fd, &struct_msg, data);
+					printf("[%s]->[All] : %s\n\n", nick_name, (char *) data);
 					break;
 				
 				case CLIENT_QUIT:
@@ -260,7 +265,11 @@ int main(int argc, char *argv[]) {
 					}
 					
 					break;
-					
+
+				case BROADCAST_SEND:
+					printf("[%s]->[All] %s\n", msg_struct.nick_sender, (char *) data);
+					break;
+
 
 				default:
 					break;

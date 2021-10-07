@@ -148,6 +148,7 @@ int main(int argc, char *argv[]) {
 				void *data = NULL;
 				struct message struct_msg;
 				
+				struct client *client_rcv;
 
 				switch (receive_msg(pollfds[i].fd, &struct_msg, &data)){
 
@@ -234,10 +235,26 @@ int main(int argc, char *argv[]) {
 						send_msg(pollfds[i].fd, &struct_msg, data);
 						printf("\tResponse was sent.\n");
 
-						
-
 						break;
 
+					case BROADCAST_SEND:
+
+						printf("\t/msgall %s\n", (char *) data);
+
+						client_rcv = client_list->first_client;
+						while(client_rcv != NULL){
+
+							if(client_rcv == c){
+								client_rcv = client_rcv->next;
+								continue;
+							}
+
+							send_msg(client_rcv->fd, &struct_msg, data);
+
+							client_rcv = client_rcv->next;
+						}
+
+						break;
 
 					default:
 						break;

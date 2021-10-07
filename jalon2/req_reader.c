@@ -45,7 +45,16 @@ enum msg_type req_reader(char *req, struct message *struct_msg, void **data){
     }
 
     if(strncmp(req, "/msgall ", 8) == 0){
+
+        struct_msg->pld_len = (strlen(req+8)+1)*sizeof(char);
+        strcpy(struct_msg->nick_sender, nick_name);
+        struct_msg->type = BROADCAST_SEND;
+        strcpy(struct_msg->infos, "");
+
+        *data = malloc(struct_msg->pld_len);
+        strcpy(*data, req+8);
         
+        return BROADCAST_SEND;
     }
 
     if(strncmp(req, "/msg ", 5) == 0){
