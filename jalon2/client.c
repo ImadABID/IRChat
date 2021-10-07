@@ -172,7 +172,9 @@ int main(int argc, char *argv[]) {
 					break;
 
 				case NICKNAME_NEW:
-					send_msg(socket_fd, &struct_msg, data);
+					if(nick_name_validate(struct_msg.infos)){
+						send_msg(socket_fd, &struct_msg, data);
+					}
 					break;
 				
 				case NICKNAME_LIST:
