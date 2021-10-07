@@ -112,8 +112,8 @@ struct client *client_list_get_client_by_nickname(struct client_list *cl, char *
         c = c->next;
     }
 
-    fprintf(stderr, "client_list_get_client_by_nickname : No such client with nickname = %s.\n", nickname_);
-    exit(EXIT_FAILURE);
+    // No such client with nickname = nickname_
+    return NULL;
 }
 
 //nickname check

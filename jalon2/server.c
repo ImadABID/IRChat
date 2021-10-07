@@ -205,24 +205,36 @@ int main(int argc, char *argv[]) {
 					case NICKNAME_INFOS:
 						printf("\t/whois %s\n", struct_msg.infos);
 
-						struct_msg.pld_len = sizeof(struct whois_data);
-						strcpy(struct_msg.nick_sender, "Server");
-
-						struct client *target_client = client_list_get_client_by_nickname(client_list, struct_msg.infos);
-						struct whois_data *client_data = malloc(sizeof(struct whois_data));
-						strcpy(client_data->nickname, target_client->nickname);
-						strcpy(client_data->date, target_client->connecion_time);
-						strcpy(client_data->address, target_client->host);
-						client_data->port = target_client->port;
-
-						send_msg(pollfds[i].fd, &struct_msg, client_data);
-						printf("\tResponse was sent.\n");
-
 						// Just in case the client send data
 						if(data != NULL){
 							free(data);
 						}
-						data = (void *) client_data;
+
+						struct_msg.pld_len = sizeof(struct whois_data);
+						strcpy(struct_msg.nick_sender, "Server");
+
+						struct client *target_client = client_list_get_client_by_nickname(client_list, struct_msg.infos);
+						if(target_client == NULL){
+
+							char msg_error[] = "Error : No user with such nickname.";
+							data = malloc(sizeof(char)*(strlen(msg_error)+1));
+							strcpy(data, msg_error);
+
+						}else{
+
+							struct whois_data *client_data = malloc(sizeof(struct whois_data));
+							strcpy(client_data->nickname, target_client->nickname);
+							strcpy(client_data->date, target_client->connecion_time);
+							strcpy(client_data->address, target_client->host);
+							client_data->port = target_client->port;
+
+							data = (void *) client_data;
+						}
+
+						send_msg(pollfds[i].fd, &struct_msg, data);
+						printf("\tResponse was sent.\n");
+
+						
 
 						break;
 

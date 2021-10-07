@@ -245,6 +245,10 @@ int main(int argc, char *argv[]) {
 
 				case NICKNAME_INFOS:
 
+					if(strncmp((char *)data, "Error : ", 8) == 0){
+						printf("\t%s\n", (char *)data);
+					}else{
+
 					client_data = (struct whois_data *) data;
 
 					printf("[Server] :\n");
@@ -252,6 +256,8 @@ int main(int argc, char *argv[]) {
 					printf("\tConnected since \t: %s\n", client_data->date);
 					printf("\tAddress \t\t: %s\n", client_data->address);
 					printf("\tPort \t\t\t: %d\n", client_data->port);
+
+					}
 					
 					break;
 					
