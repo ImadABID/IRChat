@@ -15,6 +15,8 @@ struct salon{
 
 struct salon_list{
     struct salon *first_salon;
+
+    unsigned int salon_nbr;
 };
 
 // Salon
@@ -25,5 +27,7 @@ void salon_recursive_free(struct salon *sal);
 // Salon list
 struct salon_list *salon_list_new();
 void salon_list_free(struct salon_list *salist);
+
+
 
 #endif
