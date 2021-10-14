@@ -52,6 +52,37 @@ void client_list_insert(struct client_list *cl, struct client *c){
     cl->client_nbr++;
 }
 
+int client_list_detache_client_by_fd(struct client_list *cl, int fd){
+    struct client *c = cl->first_client;
+    struct client *c_prev = NULL;
+
+    // Finding prev c
+    while(c != NULL){
+
+        if(c->fd == fd){
+            break;
+        }
+
+        c_prev = c;
+        c = c->next;
+    }
+
+    if(c == NULL){
+        return -1;
+    }
+
+    // deleting client
+    if(c_prev == NULL){
+        cl->first_client = c->next;
+    }else{
+        c_prev->next = c->next;
+    } 
+
+    cl->client_nbr--;
+
+    return 0;
+}
+
 int client_list_drop_client_by_fd(struct client_list *cl, int fd){
 
     struct client *c = cl->first_client;
@@ -79,9 +110,10 @@ int client_list_drop_client_by_fd(struct client_list *cl, int fd){
         c_prev->next = c->next;
     }
 
-    client_free(c);
+    client_free(c);  
 
     cl->client_nbr--;
+  
 
     return 0;
 }

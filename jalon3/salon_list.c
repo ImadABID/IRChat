@@ -52,9 +52,28 @@ void salon_list_insert(struct salon_list *salist, struct salon *sal){
     salist->salon_nbr++;
 }
 
-//drop client
-void salon_drop_client_by_fd(struct salon *sal, int c_fd){
-    client_list_drop_client_by_fd(sal->members, c_fd);
+// drop client
+int salon_detache_client_by_fd(struct salon *sal, int c_fd){
+
+    return client_list_detache_client_by_fd(sal->members, c_fd);
+}
+
+/*
+    Drop client from all salons.
+    returns :
+        - struct salon * salon_from_where_the_client_was_deleted
+        - NULL if the client doesn't belong to any salon
+*/
+struct salon *salon_list_detache_client_by_fd(struct salon_list *salist, int c_fd){
+    struct salon *sal = salist->first_salon;
+    while(sal != NULL){
+        if(salon_detache_client_by_fd(sal, c_fd) != -1){
+            return sal;
+        }
+        sal = sal->next;
+    }
+
+    return NULL;
 }
 
 // get salon

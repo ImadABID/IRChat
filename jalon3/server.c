@@ -298,6 +298,10 @@ int main(int argc, char *argv[]) {
 							strcpy(struct_msg.infos, "AlreadyUsed");
 							printf("\tOperation rejected : The name is already used.\n");
 						}else{
+							salon = salon_list_detache_client_by_fd(salon_list, pollfds[i].fd);
+							if(salon != NULL){
+								printf("\t%s was detached from the channel : %s\n", c->nickname, salon->name);
+							}
 							salon = salon_new(struct_msg.infos, c);
 							salon_list_insert(salon_list, salon);
 							printf("\tOperation accepted.\n");
