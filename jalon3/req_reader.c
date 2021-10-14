@@ -80,6 +80,19 @@ enum msg_type req_reader(char *req, struct message *struct_msg, void **data){
         return UNICAST_SEND;
     }
 
+    if(strncmp(req, "/create ", 8) == 0){
+
+        struct_msg->pld_len = 0;
+        strcpy(struct_msg->nick_sender, nick_name);
+        struct_msg->type = MULTICAST_CREATE;
+        strcpy(struct_msg->infos, req+8);
+
+        *data = NULL;
+
+        return MULTICAST_CREATE;
+        
+    }
+
     if(strncmp(req, "/quit", 5) == 0){
         *data = NULL;
         struct_msg->pld_len = 0;

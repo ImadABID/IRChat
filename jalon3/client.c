@@ -13,25 +13,25 @@
 #include "req_reader.h"
 
 
-char nick_name_validate(char nick_name_[]){
+char name_validate(char nick_name_[]){
 
 	size_t nikname_len = 0;
 	char c = nick_name_[0];
 	while(c != '\0'){
 		if(!(('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || ('0' <= c && c <= '9'))){
-			printf("Nikname shouldn't contain special characters. Try again.\n");
+			printf("The name shouldn't contain special characters. Try again.\n");
 			return 0;
 		}
 		c = nick_name_[nikname_len++];
 		if(nikname_len > NICK_LEN-1){
-			printf("Nikname too long. Try again.\n");
+			printf("The name too long. Try again.\n");
 			return 0;
 		}
 	}
 	nikname_len++;
 
 	if(nikname_len==1){
-		printf("Nikname can't be an empty string. Try again.\n");
+		printf("The name can't be an empty string. Try again.\n");
 		return 0;
 	}
 
@@ -70,7 +70,7 @@ void nickname_set_1st_time(int socket_fd){
 			}
 			buff_stdin[buff_stdin_i++] = '\0';
 		}
-		if(nick_name_validate(struct_msg.infos)){
+		if(name_validate(struct_msg.infos)){
 			repeat = 0;
 			send_msg(socket_fd, &struct_msg, data);
 		}else{
@@ -130,7 +130,9 @@ int main(int argc, char *argv[]) {
 	//Set Nickname
 	strcpy(nick_name, "");
 	nickname_set_1st_time(socket_fd);
-	
+
+	// Set Salon Name
+	strcpy(salon_name, "");
 
 	struct pollfd pollfds[2];
 	pollfds[0].fd = STDIN_FILENO;
@@ -172,7 +174,7 @@ int main(int argc, char *argv[]) {
 					break;
 
 				case NICKNAME_NEW:
-					if(nick_name_validate(struct_msg.infos)){
+					if(name_validate(struct_msg.infos)){
 						send_msg(socket_fd, &struct_msg, data);
 					}
 					break;
@@ -198,6 +200,12 @@ int main(int argc, char *argv[]) {
 						send_msg(socket_fd, &struct_msg, data);
 					}
 
+					break;
+
+				case MULTICAST_CREATE :
+					if(name_validate(struct_msg.infos)){
+						send_msg(socket_fd, &struct_msg, data);
+					}
 					break;
 				
 				case CLIENT_QUIT:
@@ -231,12 +239,6 @@ int main(int argc, char *argv[]) {
 				
 				case ECHO_SEND:
 					printf("[server] %s\n", (char *) data);
-					break;
-
-				case CLIENT_QUIT:
-					close(socket_fd);
-					printf("Server Deconnected\n");
-					exit(EXIT_SUCCESS);
 					break;
 
 				case NICKNAME_NEW:
@@ -284,6 +286,21 @@ int main(int argc, char *argv[]) {
 
 				case UNICAST_SEND:
 					printf("[%s]->[%s] %s\n", msg_struct.nick_sender, nick_name, (char *) data);
+					break;
+
+				case MULTICAST_CREATE:
+					if(strcmp(msg_struct.infos, "AlreadyUsed") == 0){
+						printf("This channel name is already used. Operation rejected.\n");
+					}else{
+						strcpy(salon_name, msg_struct.infos);
+						printf("Channel created with the name : %s.\n", salon_name);
+					}
+					break;
+
+				case CLIENT_QUIT:
+					close(socket_fd);
+					printf("Server Deconnected\n");
+					exit(EXIT_SUCCESS);
 					break;
 
 				default:

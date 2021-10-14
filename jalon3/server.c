@@ -153,6 +153,8 @@ int main(int argc, char *argv[]) {
 				
 				struct client *client_rcv;
 
+				struct salon *salon;
+
 				switch (receive_msg(pollfds[i].fd, &struct_msg, &data)){
 
 					case ECHO_SEND:
@@ -283,6 +285,21 @@ int main(int argc, char *argv[]) {
 							send_msg(client_rcv->fd, &struct_msg, data);
 							printf("\tMessage sent to %s\n", client_rcv->nickname);
 						}
+
+						break;
+
+					case MULTICAST_CREATE:
+						printf("\tCreating a channel with the name : %s\n", struct_msg.infos);
+						if(salon_list_name_already_used(salon_list, struct_msg.infos)){
+							strcpy(struct_msg.infos, "AlreadyUsed");
+							printf("\tOperation rejected : The name is already used.\n");
+						}else{
+							salon = salon_new(struct_msg.infos, c);
+							salon_list_insert(salon_list, salon);
+							printf("\tOperation accepted.\n");
+						}
+						
+						send_msg(pollfds[i].fd, &struct_msg, data);
 
 						break;
 
