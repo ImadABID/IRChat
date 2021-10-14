@@ -32,7 +32,7 @@ void salon_list_free(struct salon_list *salist);
 void salon_list_insert(struct salon_list *salist, struct salon *sal);
 
 //drop client
-void salon_list_drop_client_by_fd(struct salon *sal, int c_fd);
+void salon_drop_client_by_fd(struct salon *sal, int c_fd);
 
 // get salon
 struct salon *salon_list_get_salon_by_name(struct salon_list *salist, char *name);

@@ -35,7 +35,7 @@ void client_list_free(struct client_list *cl);
 
 // Insert / Drop
 void client_list_insert(struct client_list *cl, struct client *c);
-void client_list_drop_client_by_fd(struct client_list *cl, int fd);
+int client_list_drop_client_by_fd(struct client_list *cl, int fd);
 
 // Getters
 struct client *client_list_get_client_by_fd(struct client_list *cl, int fd);

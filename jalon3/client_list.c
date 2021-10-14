@@ -52,7 +52,7 @@ void client_list_insert(struct client_list *cl, struct client *c){
     cl->client_nbr++;
 }
 
-void client_list_drop_client_by_fd(struct client_list *cl, int fd){
+int client_list_drop_client_by_fd(struct client_list *cl, int fd){
 
     struct client *c = cl->first_client;
     struct client *c_prev = NULL;
@@ -69,8 +69,7 @@ void client_list_drop_client_by_fd(struct client_list *cl, int fd){
     }
 
     if(c == NULL){
-        fprintf(stderr, "client_list_drop_client_by_fd : Can't find client with fd = %d.\n", fd);
-        exit(EXIT_FAILURE);
+        return -1;
     }
 
     // deleting client
@@ -84,6 +83,7 @@ void client_list_drop_client_by_fd(struct client_list *cl, int fd){
 
     cl->client_nbr--;
 
+    return 0;
 }
 
 // Getters

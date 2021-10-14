@@ -53,7 +53,7 @@ void salon_list_insert(struct salon_list *salist, struct salon *sal){
 }
 
 //drop client
-void salon_list_drop_client_by_fd(struct salon *sal, int c_fd){
+void salon_drop_client_by_fd(struct salon *sal, int c_fd){
     client_list_drop_client_by_fd(sal->members, c_fd);
 }
 

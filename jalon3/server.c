@@ -135,7 +135,9 @@ int main(int argc, char *argv[]) {
 				
 				//close(pollfd[i].fd)
 				close(pollfds[i].fd);
-				client_list_drop_client_by_fd(client_list, pollfds[i].fd);
+				if(client_list_drop_client_by_fd(client_list, pollfds[i].fd) == -1){
+					fprintf(stderr, "client_list_drop_client_by_fd : can't find a client with fd = %d\n", pollfds[i].fd);
+				}
 				pollfds[i].fd = -1;
 
 				// set pollfds[i].event = 0
@@ -169,7 +171,9 @@ int main(int argc, char *argv[]) {
 						
 						//close(pollfd[i].fd)
 						close(pollfds[i].fd);
-						client_list_drop_client_by_fd(client_list, pollfds[i].fd);
+						if(client_list_drop_client_by_fd(client_list, pollfds[i].fd) == -1){
+							fprintf(stderr, "client_list_drop_client_by_fd : can't find a client with fd = %d\n", pollfds[i].fd);
+						}
 						pollfds[i].fd = -1;
 
 						// set pollfds[i].event = 0
