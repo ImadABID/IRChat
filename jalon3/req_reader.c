@@ -93,6 +93,18 @@ enum msg_type req_reader(char *req, struct message *struct_msg, void **data){
         
     }
 
+    if(strcmp(req, "/channel_list") == 0){
+
+        struct_msg->pld_len = 0;
+        strcpy(struct_msg->nick_sender, nick_name);
+        struct_msg->type = MULTICAST_LIST;
+        strcpy(struct_msg->infos, "");
+
+        *data = NULL;
+
+        return MULTICAST_LIST;
+    }
+
     if(strncmp(req, "/quit", 5) == 0){
         *data = NULL;
         struct_msg->pld_len = 0;

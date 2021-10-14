@@ -311,6 +311,23 @@ int main(int argc, char *argv[]) {
 
 						break;
 
+					case MULTICAST_LIST:
+						printf("\t/channel_list\n");
+						struct_msg.pld_len = salon_list->salon_nbr * NICK_LEN;
+						strcpy(struct_msg.nick_sender, "Server");
+						// Just in case the client send data
+						if(data != NULL){
+							free(data);
+						}
+
+						data = malloc(struct_msg.pld_len * sizeof(char));
+						salon_list_names_as_array(salon_list, (char *) data);
+
+						send_msg(pollfds[i].fd, &struct_msg, data);
+						printf("\tResponse was sent.\n");
+
+						break;
+
 					default:
 						break;
 				}

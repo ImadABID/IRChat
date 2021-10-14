@@ -207,6 +207,10 @@ int main(int argc, char *argv[]) {
 						send_msg(socket_fd, &struct_msg, data);
 					}
 					break;
+
+				case MULTICAST_LIST:
+					send_msg(socket_fd, &struct_msg, data);
+					break;
 				
 				case CLIENT_QUIT:
 
@@ -294,6 +298,13 @@ int main(int argc, char *argv[]) {
 					}else{
 						strcpy(salon_name, msg_struct.infos);
 						printf("Channel created with the name : %s.\n", salon_name);
+					}
+					break;
+
+				case MULTICAST_LIST:
+					printf("[Server] : Active channels are :\n");
+					for(int i =0; i < msg_struct.pld_len; i+=NICK_LEN){
+						printf("\t%s\n", ((char *) data)+i);
 					}
 					break;
 
