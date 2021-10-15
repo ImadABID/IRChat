@@ -105,6 +105,18 @@ enum msg_type req_reader(char *req, struct message *struct_msg, void **data){
         return MULTICAST_LIST;
     }
 
+    if(strncmp(req, "/join ", 6) == 0){
+
+        struct_msg->pld_len = 0;
+        strcpy(struct_msg->nick_sender, nick_name);
+        struct_msg->type = MULTICAST_JOIN;
+        strcpy(struct_msg->infos, req+6);
+
+        *data = NULL;
+        
+        return MULTICAST_JOIN;
+    }
+
     if(strncmp(req, "/quit", 5) == 0){
         *data = NULL;
         struct_msg->pld_len = 0;

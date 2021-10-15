@@ -328,6 +328,30 @@ int main(int argc, char *argv[]) {
 
 						break;
 
+					case MULTICAST_JOIN:
+
+						printf("\t/join %s\n", struct_msg.infos);
+
+						salon = salon_list_get_salon_by_name(salon_list, struct_msg.infos);
+
+						if(salon == NULL){
+							strcpy(struct_msg.nick_sender, "Server");
+							strcpy(struct_msg.infos, "");
+							send_msg(pollfds[i].fd, &struct_msg, data);
+							printf("\t\tThere is no channel with this name. Join Rejected\n");
+						}else{
+							struct salon *old_sal = salon_list_detache_client_by_fd(salon_list, pollfds[i].fd);
+							if(old_sal != NULL){
+								printf("\t\t%s was detached from the channel : %s\n", c->nickname, old_sal->name);
+							}
+							client_list_insert(salon->members, c);
+							strcpy(struct_msg.nick_sender, "Server");
+							send_msg(pollfds[i].fd, &struct_msg, data);
+							printf("\t\tJoin accepted\n");
+						}
+
+						break;
+
 					default:
 						break;
 				}

@@ -212,6 +212,11 @@ int main(int argc, char *argv[]) {
 					send_msg(socket_fd, &struct_msg, data);
 					break;
 				
+				case MULTICAST_JOIN:
+					send_msg(socket_fd, &struct_msg, data);
+					printf("Joining channel : %s\n\n", struct_msg.infos);
+					break;
+
 				case CLIENT_QUIT:
 
 					send_msg(socket_fd, &struct_msg, data);
@@ -305,6 +310,15 @@ int main(int argc, char *argv[]) {
 					printf("[Server] : Active channels are :\n");
 					for(int i =0; i < msg_struct.pld_len; i+=NICK_LEN){
 						printf("\t%s\n", ((char *) data)+i);
+					}
+					break;
+
+				case MULTICAST_JOIN:
+					if(strlen(msg_struct.infos)==0){
+						printf("There is no channel with this name. Join Rejected\n");
+					}else{
+						strcpy(salon_name, msg_struct.infos);
+						printf("Join accepted\n");
 					}
 					break;
 
