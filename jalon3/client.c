@@ -228,6 +228,11 @@ int main(int argc, char *argv[]) {
 					
 					break;
 
+				case MULTICAST_SEND:
+					send_msg(socket_fd, &struct_msg, data);
+					printf("[%s]=>[%s] : %s\n\n", nick_name, struct_msg.infos, (char *) data);
+					break;
+
 				case CLIENT_QUIT:
 
 					send_msg(socket_fd, &struct_msg, data);
@@ -331,6 +336,10 @@ int main(int argc, char *argv[]) {
 						strcpy(salon_name, msg_struct.infos);
 						printf("Join accepted\n");
 					}
+					break;
+
+				case MULTICAST_SEND:
+					printf("[%s]=>[%s] : %s\n\n", msg_struct.nick_sender, msg_struct.infos, (char *) data);
 					break;
 
 				case CLIENT_QUIT:

@@ -138,13 +138,20 @@ enum msg_type req_reader(char *req, struct message *struct_msg, void **data){
         
     }
 
-    //ECHO_SEND
-    *data = malloc((strlen(req)+1)*sizeof(char));
-    strcpy(*data, req);
     struct_msg->pld_len = strlen(req)+1;
+    *data = malloc(struct_msg->pld_len*sizeof(char));
+    strcpy(*data, req);
     strcpy(struct_msg->nick_sender, nick_name);
-    struct_msg->type = ECHO_SEND;
-    strcpy(struct_msg->infos, "");
-    return ECHO_SEND;
+
+    if(strlen(salon_name) == 0){
+        //ECHO_SEND 
+        struct_msg->type = ECHO_SEND;
+        strcpy(struct_msg->infos, "");
+        return ECHO_SEND;
+    }else{
+        struct_msg->type = MULTICAST_SEND;
+        strcpy(struct_msg->infos, salon_name);
+        return MULTICAST_SEND;
+    }
 
 }

@@ -379,6 +379,26 @@ int main(int argc, char *argv[]) {
 						}
 
 						break;
+
+					case MULTICAST_SEND:
+						printf("\tTo %s : %s\n", struct_msg.infos, (char *) data);
+
+						salon = salon_list_get_salon_by_name(salon_list, struct_msg.infos);
+
+						client_rcv = salon->members->first_client;
+						while(client_rcv != NULL){
+
+							if(client_rcv->fd == c->fd){
+								client_rcv = client_rcv->next;
+								continue;
+							}
+
+							send_msg(*(client_rcv->fd), &struct_msg, data);
+
+							client_rcv = client_rcv->next;
+						}
+
+						break;
 					
 					case MULTICAST_QUIT:
 						salon = salon_list_detache_client_by_fd(salon_list, pollfds[i].fd);
