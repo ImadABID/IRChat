@@ -362,8 +362,8 @@ int main(int argc, char *argv[]) {
 							struct salon *old_sal = salon_list_detache_client_by_fd(salon_list, pollfds[i].fd);
 							if(old_sal != NULL){
 								printf("\t\t%s was detached from the channel : %s\n", c->nickname, old_sal->name);
-								if(salon->members->client_nbr == 0){
-									if(salon_list_drop_salon(salon_list, salon) == -1){
+								if(old_sal->members->client_nbr == 0){
+									if(salon_list_drop_salon(salon_list, old_sal) == -1){
 										fprintf(stderr, "Error : salon_list_drop_salon :Salon not in the list.\n");
 										exit(EXIT_FAILURE);
 									}
