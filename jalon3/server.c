@@ -198,8 +198,19 @@ int main(int argc, char *argv[]) {
 						break;
 
 					case CLIENT_QUIT:
-						// display message on terminal
-						printf("\tDeconnected\n");
+
+						//
+						salon = salon_list_detache_client_by_fd(salon_list, pollfds[i].fd);
+						if(salon != NULL){
+							printf("\t%s was detached from the channel : %s\n", c->nickname, salon->name);
+							if(salon->members->client_nbr == 0){
+								if(salon_list_drop_salon(salon_list, salon) == -1){
+									fprintf(stderr, "Error : salon_list_drop_salon :Salon not in the list.\n");
+									exit(EXIT_FAILURE);
+								}
+								printf("\tThe last client quit the channel. Channel deleted.\n");
+							}
+						}
 						
 						//close(pollfd[i].fd)
 						close(pollfds[i].fd);
@@ -210,6 +221,9 @@ int main(int argc, char *argv[]) {
 
 						// set pollfds[i].event = 0
 						pollfds[i].events = 0;
+
+						// display message on terminal
+						printf("\tDeconnected\n");
 
 						break;
 
