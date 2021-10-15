@@ -8,7 +8,7 @@
 #define MAX_CLIENTS 100
 #define POLL_TIMEOUT 3000
 
-#define STR_MAX_SIZE 124
+#define STR_MAX_SIZE 128
 
 #define NICK_LEN 128
 

@@ -45,6 +45,19 @@ int handle_bind(char port[]) {
 	return sfd;
 }
 
+// for sending errors & info to client
+void send_unicast_msg_to_client(int client_fd , char *msg){
+	struct message struct_msg;
+	struct_msg.pld_len = sizeof(char)*(strlen(msg)+1);
+	strcpy(struct_msg.nick_sender,"Server");
+	struct_msg.type = UNICAST_SEND;
+
+	char *data = malloc(struct_msg.pld_len);
+	strcpy(data, msg);
+
+	send_msg(client_fd, &struct_msg, data);
+}
+
 int main(int argc, char *argv[]) {
 
 	if(argc < 2){
@@ -105,12 +118,10 @@ int main(int argc, char *argv[]) {
 				//store client info in list chainee
 				struct client *c = client_new();
 				struct sockaddr_in *client_in = (struct sockaddr_in *) &cli;
-				c->fd = connfd;
-				c->port = htons(client_in->sin_port);
+				*(c->fd) = connfd;
+				*(c->port) = htons(client_in->sin_port);
 				char *ip_str = inet_ntoa(client_in->sin_addr);
-				c->host = malloc((strlen(ip_str)+1)*sizeof(char));
 				strcpy(c->host, ip_str);
-				c->nickname = malloc(NICK_LEN * sizeof(char));
 				strcpy(c->nickname, "");
 				
 				time_t timestamp = time(NULL);
@@ -118,13 +129,12 @@ int main(int argc, char *argv[]) {
 				char date_str[STR_MAX_SIZE];
     			strftime(date_str, STR_MAX_SIZE, "%d/%m/%Y %H:%M:%S", pTime);
 
-				c->connecion_time = malloc(sizeof(char)*(strlen(date_str)+1));
 				strcpy(c->connecion_time, date_str);
 
 				client_list_insert(client_list, c);
 
 				// Display Client info
-				printf("%s:%d :\n\tConnection accepted at %s.\n", c->host, c->port, c->connecion_time);
+				printf("%s:%d :\n\tConnection accepted at %s.\n", c->host, *(c->port), c->connecion_time);
 
 				// set pollfd[i].revent = 0
 				pollfds[i].revents = 0;
@@ -148,7 +158,7 @@ int main(int argc, char *argv[]) {
 			}else if(pollfds[i].fd != sfd && pollfds[i].revents & POLLIN){
 				
 				struct client *c = client_list_get_client_by_fd(client_list, pollfds[i].fd);
-				printf("\n%s@%s:%d :\n", c->nickname, c->host, c->port);
+				printf("\n%s@%s:%d :\n", c->nickname, c->host, *(c->port));
 
 				void *data = NULL;
 				struct message struct_msg;
@@ -236,7 +246,7 @@ int main(int argc, char *argv[]) {
 							strcpy(client_data->nickname, target_client->nickname);
 							strcpy(client_data->date, target_client->connecion_time);
 							strcpy(client_data->address, target_client->host);
-							client_data->port = target_client->port;
+							client_data->port = *(target_client->port);
 
 							data = (void *) client_data;
 						}
@@ -258,7 +268,7 @@ int main(int argc, char *argv[]) {
 								continue;
 							}
 
-							send_msg(client_rcv->fd, &struct_msg, data);
+							send_msg(*(client_rcv->fd), &struct_msg, data);
 
 							client_rcv = client_rcv->next;
 						}
@@ -286,7 +296,7 @@ int main(int argc, char *argv[]) {
 							printf("\t%s\n", (char *) data);
 
 						}else{
-							send_msg(client_rcv->fd, &struct_msg, data);
+							send_msg(*(client_rcv->fd), &struct_msg, data);
 							printf("\tMessage sent to %s\n", client_rcv->nickname);
 						}
 
@@ -301,6 +311,14 @@ int main(int argc, char *argv[]) {
 							salon = salon_list_detache_client_by_fd(salon_list, pollfds[i].fd);
 							if(salon != NULL){
 								printf("\t%s was detached from the channel : %s\n", c->nickname, salon->name);
+								if(salon->members->client_nbr == 0){
+									if(salon_list_drop_salon(salon_list, salon) == -1){
+										fprintf(stderr, "Error : salon_list_drop_salon :Salon not in the list.\n");
+										exit(EXIT_FAILURE);
+									}
+									printf("\tThe last client quit the channel. Channel deleted.\n");
+									send_unicast_msg_to_client(pollfds[i].fd, "You was the only member. Channel deleted.");
+								}
 							}
 							salon = salon_new(struct_msg.infos, c);
 							salon_list_insert(salon_list, salon);
@@ -343,6 +361,14 @@ int main(int argc, char *argv[]) {
 							struct salon *old_sal = salon_list_detache_client_by_fd(salon_list, pollfds[i].fd);
 							if(old_sal != NULL){
 								printf("\t\t%s was detached from the channel : %s\n", c->nickname, old_sal->name);
+								if(salon->members->client_nbr == 0){
+									if(salon_list_drop_salon(salon_list, salon) == -1){
+										fprintf(stderr, "Error : salon_list_drop_salon :Salon not in the list.\n");
+										exit(EXIT_FAILURE);
+									}
+									printf("\t\tThe last client quit the channel. Channel deleted.\n");
+									send_unicast_msg_to_client(pollfds[i].fd, "You was the only member. Channel deleted.");
+								}
 							}
 							client_list_insert(salon->members, c);
 							strcpy(struct_msg.nick_sender, "Server");
@@ -365,19 +391,8 @@ int main(int argc, char *argv[]) {
 								fprintf(stderr, "Error : salon_list_drop_salon :Salon not in the list.\n");
 								exit(EXIT_FAILURE);
 							}
-
-							char msg[] = "You was the only member. Channel deleted.";
-
-							struct_msg.pld_len = sizeof(char)*(strlen(msg)+1);
-							strcpy(struct_msg.nick_sender,"Server");
-							struct_msg.type = UNICAST_SEND;
-
-							data = malloc(struct_msg.pld_len);
-							strcpy(data, msg);
-
-							send_msg(pollfds[i].fd, &struct_msg, data);
-							printf("\t%s\n", (char *) data);
-							
+							printf("\t\tThe last client quit the channel. Channel deleted.\n");
+							send_unicast_msg_to_client(pollfds[i].fd, "You was the only member. Channel deleted.");
 						}
 
 						break;

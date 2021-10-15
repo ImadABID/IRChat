@@ -1,5 +1,5 @@
 #include "client_list.h"
-
+#include "common.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,20 +7,42 @@
 struct client *client_new(){
     struct client *c = malloc(sizeof(struct client));
 
+    c->fd = malloc(sizeof(int));
+    c->port = malloc(sizeof(unsigned short));
+
+    c->nickname = malloc(NICK_LEN * sizeof(char));
+    c->host = malloc(STR_MAX_SIZE * sizeof(char));
+    c->connecion_time = malloc(STR_MAX_SIZE * sizeof(char));
+
     c->next = NULL;
 
     return c;
 }
 
+/* client_copy
+    /!\ Important
+        pointer always point to the same data
+*/
+struct client *client_copy(struct client *c){
+    struct client *c_cp = malloc(sizeof(struct client));
+
+    c_cp->fd = c->fd;
+    c_cp->host = c->host;
+    c_cp->port = c->port;
+    c_cp->nickname = c->nickname;
+    c_cp->connecion_time = c->connecion_time;
+    c_cp->next = c->next;
+
+    return c_cp;
+}
+
 void client_free(struct client *c){
-    if(c->host != NULL)
-        free(c->host);
-
-    if(c->nickname != NULL)
-        free(c->nickname);
-
-    if(c->connecion_time != NULL)
-        free(c->connecion_time);
+    
+    free(c->fd);
+    free(c->host);
+    free(c->port);
+    free(c->nickname);
+    free(c->connecion_time);
 
     free(c);
 }
@@ -59,7 +81,7 @@ int client_list_detache_client_by_fd(struct client_list *cl, int fd){
     // Finding prev c
     while(c != NULL){
 
-        if(c->fd == fd){
+        if(*(c->fd) == fd){
             break;
         }
 
@@ -80,6 +102,9 @@ int client_list_detache_client_by_fd(struct client_list *cl, int fd){
 
     cl->client_nbr--;
 
+    // Free but keep data for other lists
+    free(c);
+
     return 0;
 }
 
@@ -91,7 +116,7 @@ int client_list_drop_client_by_fd(struct client_list *cl, int fd){
     // Finding prev c
     while(c != NULL){
 
-        if(c->fd == fd){
+        if(*(c->fd) == fd){
             break;
         }
 
@@ -123,7 +148,7 @@ struct client *client_list_get_client_by_fd(struct client_list *cl, int fd){
     struct client *c = cl->first_client;
 
     while(c != NULL){
-        if(c->fd == fd){
+        if(*(c->fd) == fd){
             return c;
         }
         c = c->next;
@@ -153,7 +178,7 @@ char client_list_nickname_already_used(struct client_list *cl, int fd, char *nik
     struct client *c = cl->first_client;
 
     while(c != NULL){
-        if(c->fd != fd && strcmp(c->nickname, nikname) == 0){
+        if(*(c->fd) != fd && strcmp(c->nickname, nikname) == 0){
             return 1;
         }
         c = c->next;

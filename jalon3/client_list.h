@@ -6,9 +6,9 @@
 
 struct client{
 
-    int fd;
+    int *fd;
     char *host;
-    unsigned short port;
+    unsigned short *port;
 
     char *nickname;
 
