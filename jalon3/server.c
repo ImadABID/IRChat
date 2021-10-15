@@ -360,6 +360,26 @@ int main(int argc, char *argv[]) {
 							printf("\tUknown channel. Operation rejected\n");
 						}
 
+						if(salon->members->client_nbr == 0){
+							if(salon_list_drop_salon(salon_list, salon) == -1){
+								fprintf(stderr, "Error : salon_list_drop_salon :Salon not in the list.\n");
+								exit(EXIT_FAILURE);
+							}
+
+							char msg[] = "You was the only member. Channel deleted.";
+
+							struct_msg.pld_len = sizeof(char)*(strlen(msg)+1);
+							strcpy(struct_msg.nick_sender,"Server");
+							struct_msg.type = UNICAST_SEND;
+
+							data = malloc(struct_msg.pld_len);
+							strcpy(data, msg);
+
+							send_msg(pollfds[i].fd, &struct_msg, data);
+							printf("\t%s\n", (char *) data);
+							
+						}
+
 						break;
 
 					default:

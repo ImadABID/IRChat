@@ -13,14 +13,14 @@ struct salon *salon_new(char *name, struct client *creator){
     strcpy(sal->name, name);
 
     sal->members = client_list_new();
-    sal->members->first_client = creator;
+    client_list_insert(sal->members, creator);
 
     return sal;
 }
 
 void salon_free(struct salon *sal){
     free(sal->name);
-    client_list_free(sal->members);
+    free(sal->members);
 }
 
 void salon_recursive_free(struct salon *sal){
@@ -50,6 +50,41 @@ void salon_list_insert(struct salon_list *salist, struct salon *sal){
     sal->next = salist->first_salon;
     salist->first_salon = sal;
     salist->salon_nbr++;
+}
+
+// drop salon
+int salon_list_drop_salon(struct salon_list *salist, struct salon *sal){
+
+    struct salon *sal_i = salist->first_salon;
+    struct salon *sal_i_prev = NULL;
+
+    // Finding prev sal_i
+    while(sal_i != NULL){
+
+        if(sal_i == sal){
+            break;
+        }
+
+        sal_i_prev = sal_i;
+        sal_i = sal_i->next;
+    }
+
+    if(sal_i == NULL){
+        return -1;
+    }
+
+    // deleting salon
+    if(sal_i_prev == NULL){
+        salist->first_salon = sal_i->next;
+    }else{
+        sal_i_prev->next = sal_i->next;
+    }
+
+    salon_free(sal);
+
+    salist->salon_nbr--;
+
+    return 0;
 }
 
 // drop client

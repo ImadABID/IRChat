@@ -31,6 +31,9 @@ void salon_list_free(struct salon_list *salist);
 // insert
 void salon_list_insert(struct salon_list *salist, struct salon *sal);
 
+// drop salon
+int salon_list_drop_salon(struct salon_list *salist, struct salon *sal);
+
 //drop client
 int salon_detache_client_by_fd(struct salon *sal, int c_fd);
 
