@@ -217,6 +217,17 @@ int main(int argc, char *argv[]) {
 					printf("Joining channel : %s\n\n", struct_msg.infos);
 					break;
 
+				case MULTICAST_QUIT:
+					if(strcmp(struct_msg.infos, salon_name) != 0){
+						printf("Please type one of the following requests :\n\t /quit %s : to quit the channel\n\t /quit to exit the programme\n", salon_name);
+					}else{
+						send_msg(socket_fd, &struct_msg, data);
+						printf("Quiting channel : %s\n\n", struct_msg.infos);
+						strcpy(salon_name, "");
+					}
+					
+					break;
+
 				case CLIENT_QUIT:
 
 					send_msg(socket_fd, &struct_msg, data);

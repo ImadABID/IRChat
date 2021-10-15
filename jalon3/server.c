@@ -351,6 +351,16 @@ int main(int argc, char *argv[]) {
 						}
 
 						break;
+					
+					case MULTICAST_QUIT:
+						salon = salon_list_detache_client_by_fd(salon_list, pollfds[i].fd);
+						if(salon != NULL){
+							printf("\t%s was detached from the channel : %s\n", c->nickname, salon->name);
+						}else{
+							printf("\tUknown channel. Operation rejected\n");
+						}
+
+						break;
 
 					default:
 						break;
