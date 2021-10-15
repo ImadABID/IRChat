@@ -339,7 +339,7 @@ int main(int argc, char *argv[]) {
 					break;
 
 				case MULTICAST_SEND:
-					printf("[%s]=>[%s] : %s\n\n", msg_struct.nick_sender, msg_struct.infos, (char *) data);
+					printf("\n[%s]=>[%s] : %s\n\n", msg_struct.nick_sender, msg_struct.infos, (char *) data);
 					break;
 
 				case CLIENT_QUIT:

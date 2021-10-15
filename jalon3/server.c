@@ -58,6 +58,28 @@ void send_unicast_msg_to_client(int client_fd , char *msg){
 	send_msg(client_fd, &struct_msg, data);
 }
 
+void send_to_users_in_salon(struct salon *sal, char *msg, char *nick_sender){
+
+	struct message *struct_msg = malloc(sizeof(struct message));
+	struct_msg->pld_len = sizeof(char)*(strlen(msg)+1);
+	strcpy(struct_msg->nick_sender, nick_sender);
+	strcpy(struct_msg->infos, sal->name);
+	struct_msg->type = MULTICAST_SEND;
+
+	char *data = malloc(struct_msg->pld_len);
+	strcpy(data, msg);
+
+	struct client *client_rcv = sal->members->first_client;
+	while(client_rcv != NULL){
+
+		send_msg(*(client_rcv->fd), struct_msg, data);
+
+		client_rcv = client_rcv->next;
+	}
+
+	free(struct_msg);
+}
+
 int main(int argc, char *argv[]) {
 
 	if(argc < 2){
@@ -362,6 +384,9 @@ int main(int argc, char *argv[]) {
 							struct salon *old_sal = salon_list_detache_client_by_fd(salon_list, pollfds[i].fd);
 							if(old_sal != NULL){
 								printf("\t\t%s was detached from the channel : %s\n", c->nickname, old_sal->name);
+								char msg[STR_MAX_SIZE];
+								sprintf(msg, "Channel info : %s quits %s.", c->nickname, old_sal->name);
+								send_to_users_in_salon(old_sal, msg, "Server");
 								if(old_sal->members->client_nbr == 0){
 									if(salon_list_drop_salon(salon_list, old_sal) == -1){
 										fprintf(stderr, "Error : salon_list_drop_salon :Salon not in the list.\n");
@@ -376,6 +401,9 @@ int main(int argc, char *argv[]) {
 							strcpy(struct_msg.nick_sender, "Server");
 							send_msg(pollfds[i].fd, &struct_msg, data);
 							printf("\t\tJoin accepted\n");
+							char msg[STR_MAX_SIZE];
+							sprintf(msg, "Channel info : %s joins %s.", c->nickname, salon->name);
+							send_to_users_in_salon(salon, msg, "Server");
 						}
 
 						break;
@@ -385,18 +413,7 @@ int main(int argc, char *argv[]) {
 
 						salon = salon_list_get_salon_by_name(salon_list, struct_msg.infos);
 
-						client_rcv = salon->members->first_client;
-						while(client_rcv != NULL){
-
-							if(client_rcv->fd == c->fd){
-								client_rcv = client_rcv->next;
-								continue;
-							}
-
-							send_msg(*(client_rcv->fd), &struct_msg, data);
-
-							client_rcv = client_rcv->next;
-						}
+						send_to_users_in_salon(salon, (char *) data, struct_msg.nick_sender);
 
 						break;
 					
@@ -404,6 +421,9 @@ int main(int argc, char *argv[]) {
 						salon = salon_list_detache_client_by_fd(salon_list, pollfds[i].fd);
 						if(salon != NULL){
 							printf("\t%s was detached from the channel : %s\n", c->nickname, salon->name);
+							char msg[STR_MAX_SIZE];
+							sprintf(msg, "Channel info : %s quits %s.", c->nickname, salon->name);
+							send_to_users_in_salon(salon, msg, "Server");
 						}else{
 							printf("\tUknown channel. Operation rejected\n");
 						}
@@ -414,7 +434,7 @@ int main(int argc, char *argv[]) {
 								exit(EXIT_FAILURE);
 							}
 							printf("\t\tThe last client quit the channel. Channel deleted.\n");
-							send_unicast_msg_to_client(pollfds[i].fd, "You was the only member. Channel deleted.");
+							send_unicast_msg_to_client(pollfds[i].fd, "You were the only member. Channel deleted.");
 						}
 
 						break;

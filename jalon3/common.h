@@ -8,9 +8,9 @@
 #define MAX_CLIENTS 100
 #define POLL_TIMEOUT 3000
 
-#define STR_MAX_SIZE 128
+#define STR_MAX_SIZE 256
 
-#define NICK_LEN 128
+#define NICK_LEN 64
 
 struct info{
     short s;
