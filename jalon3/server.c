@@ -320,7 +320,8 @@ int main(int argc, char *argv[]) {
 									send_unicast_msg_to_client(pollfds[i].fd, "You was the only member. Channel deleted.");
 								}
 							}
-							salon = salon_new(struct_msg.infos, c);
+							struct client *c_creator = client_copy(c);
+							salon = salon_new(struct_msg.infos, c_creator);
 							salon_list_insert(salon_list, salon);
 							printf("\tOperation accepted.\n");
 						}
@@ -370,7 +371,8 @@ int main(int argc, char *argv[]) {
 									send_unicast_msg_to_client(pollfds[i].fd, "You was the only member. Channel deleted.");
 								}
 							}
-							client_list_insert(salon->members, c);
+							struct client *c_in_salon = client_copy(c);
+							client_list_insert(salon->members, c_in_salon);
 							strcpy(struct_msg.nick_sender, "Server");
 							send_msg(pollfds[i].fd, &struct_msg, data);
 							printf("\t\tJoin accepted\n");

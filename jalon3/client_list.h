@@ -26,6 +26,14 @@ struct client_list{
 
 // Client
 struct client *client_new();
+
+/* client_copy
+    /!\ Important
+        pointer always point to the same data
+*/
+struct client *client_copy(struct client *c);
+
+// Client free
 void client_free(struct client *c);
 void client_recursive_free(struct client *c);
 
