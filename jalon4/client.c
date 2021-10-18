@@ -242,6 +242,16 @@ int main(int argc, char *argv[]) {
 					exit(EXIT_SUCCESS);
 					break;
 
+				case FILE_REQUEST:
+
+					if(data == NULL){
+						printf("Please Respect this format : /send file_name receiver_nickname\n");
+					}else{
+						send_msg(socket_fd, &struct_msg, data);
+					}
+
+					break;
+
 				default:
 					break;
 			}
@@ -341,6 +351,11 @@ int main(int argc, char *argv[]) {
 				case MULTICAST_SEND:
 					printf("\n[%s]=>[%s] : %s\n\n", msg_struct.nick_sender, msg_struct.infos, (char *) data);
 					break;
+
+				case FILE_REQUEST:
+					printf("\t%s requests to send you %s.\n", msg_struct.infos, (char *) data);
+					break;
+
 
 				case CLIENT_QUIT:
 					close(socket_fd);

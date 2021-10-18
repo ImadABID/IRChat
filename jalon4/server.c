@@ -186,6 +186,7 @@ int main(int argc, char *argv[]) {
 				struct message struct_msg;
 				
 				struct client *client_rcv;
+				struct client *target_client;
 
 				struct salon *salon;
 
@@ -269,7 +270,7 @@ int main(int argc, char *argv[]) {
 						struct_msg.pld_len = sizeof(struct whois_data);
 						strcpy(struct_msg.nick_sender, "Server");
 
-						struct client *target_client = client_list_get_client_by_nickname(client_list, struct_msg.infos);
+						target_client = client_list_get_client_by_nickname(client_list, struct_msg.infos);
 						if(target_client == NULL){
 
 							char msg_error[] = "Error : No user with such nickname.";
@@ -452,6 +453,38 @@ int main(int argc, char *argv[]) {
 						}
 
 						break;
+
+					case FILE_REQUEST:
+						
+
+						printf("\t%s requests to send %s to %s.\n", struct_msg.nick_sender, (char *) data, struct_msg.infos);
+
+
+						target_client = client_list_get_client_by_nickname(client_list, struct_msg.infos);
+						if(target_client == NULL){
+
+							if(data != NULL){
+								free(data);
+							}
+
+							char msg_error[] = "No user with such nickname. Sending file rejected.";
+							struct_msg.pld_len = sizeof(char)*(strlen(msg_error)+1);
+							data = malloc(struct_msg.pld_len);
+							strcpy(data, msg_error);
+							struct_msg.type = FILE_REJECT;
+							printf("\t%s\n", msg_error);
+
+
+						}else{
+							printf("\tThe request was sent to %s.\n", struct_msg.infos);
+							strcpy(struct_msg.infos, struct_msg.nick_sender);
+						}
+
+						strcpy(struct_msg.nick_sender, "Server");
+						send_msg(*(target_client->fd), &struct_msg, data);
+
+						break;
+
 
 					default:
 						break;

@@ -127,6 +127,49 @@ enum msg_type req_reader(char *req, struct message *struct_msg, void **data){
         return MULTICAST_QUIT;
     }
 
+    if(strncmp(req, "/send ", 6) == 0){
+
+        /*
+            /send file_name receiver_nickname
+        */
+
+        size_t receiver_index = 6;
+
+        while(req[receiver_index] != ' '){
+            if(req[receiver_index++] == '\0'){
+                *data = NULL;
+                return FILE_REQUEST;
+            }
+        }
+
+        req[receiver_index] = '\0';
+
+        
+        struct_msg->pld_len = (strlen(req+6)+1)*sizeof(char);
+        if(struct_msg->pld_len == 1){
+            // file name is an empty string
+            *data = NULL;
+            return FILE_REQUEST;
+        }
+
+        if(strlen(req+receiver_index+1) == 0){
+            // receiver nickname is an empty string
+            *data = NULL;
+            return FILE_REQUEST;
+        }
+
+
+        *data = malloc(struct_msg->pld_len);
+        strcpy((char *) *data, req+6);
+
+        strcpy(struct_msg->nick_sender, nick_name);
+        struct_msg->type = FILE_REQUEST;
+        strcpy(struct_msg->infos, req+receiver_index+1);
+
+        return FILE_REQUEST;
+
+    }
+
     if(strcmp(req, "/quit") == 0){
 
         *data = NULL;
