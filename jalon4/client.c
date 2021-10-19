@@ -11,7 +11,7 @@
 #include "common.h"
 #include "msg_IO.h"
 #include "req_reader.h"
-
+#include "file_transfer.h"
 
 char name_validate(char nick_name_[]){
 
@@ -135,8 +135,8 @@ int main(int argc, char *argv[]) {
 	strcpy(salon_name, "");
 
 	// Set File I/O Lists
-	//struct file_list *file_in_list = file_list_init();
-	//struct file_list *file_out_list = file_list_init();
+	struct file_list *file_in_list = file_list_init();
+	struct file_list *file_out_list = file_list_init();
 
 	struct pollfd pollfds[2];
 	pollfds[0].fd = STDIN_FILENO;
@@ -391,8 +391,8 @@ int main(int argc, char *argv[]) {
 	
 	quitter :
 	close(socket_fd);
-	//list_file_free(file_in_list);
-	//list_file_free(file_out_list);
+	list_file_free(file_in_list);
+	list_file_free(file_out_list);
 
 	return EXIT_SUCCESS;
 }
