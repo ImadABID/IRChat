@@ -134,6 +134,10 @@ int main(int argc, char *argv[]) {
 	// Set Salon Name
 	strcpy(salon_name, "");
 
+	// Set File I/O Lists
+	//struct file_list *file_in_list = file_list_init();
+	//struct file_list *file_out_list = file_list_init();
+
 	struct pollfd pollfds[2];
 	pollfds[0].fd = STDIN_FILENO;
 	pollfds[0].events = POLLIN;
@@ -237,10 +241,8 @@ int main(int argc, char *argv[]) {
 
 					send_msg(socket_fd, &struct_msg, data);
 
-					close(socket_fd);
 					printf("Deconnected\n");
-					exit(EXIT_SUCCESS);
-					break;
+					goto quitter;
 
 				case FILE_REQUEST:
 
@@ -353,15 +355,18 @@ int main(int argc, char *argv[]) {
 					break;
 
 				case FILE_REQUEST:
-					printf("\t%s requests to send you %s.\n", msg_struct.infos, (char *) data);
+					printf("[%s] requests to send you %s.\n", msg_struct.infos, (char *) data);
+					//printf("Type \n", msg_struct.infos, (char *) data);
+					break;
+
+				case FILE_REJECT:
+					printf("[%s] %s\n", msg_struct.nick_sender, (char *) data);
 					break;
 
 
 				case CLIENT_QUIT:
-					close(socket_fd);
 					printf("Server Deconnected\n");
-					exit(EXIT_SUCCESS);
-					break;
+					goto quitter;
 
 				default:
 					break;
@@ -379,11 +384,15 @@ int main(int argc, char *argv[]) {
 		if(pollfds[1].revents & POLLHUP){
 			close(socket_fd);
 			printf("Server Deconnected\n");
-			exit(EXIT_SUCCESS);
+			goto quitter;
 		}
 		
 	}
 	
+	quitter :
 	close(socket_fd);
+	//list_file_free(file_in_list);
+	//list_file_free(file_out_list);
+
 	return EXIT_SUCCESS;
 }
