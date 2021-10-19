@@ -17,7 +17,6 @@ enum file_transfer_status{
 struct file{
     enum file_transfer_status transfer_status;
     char name[STR_MAX_SIZE]; //path
-    unsigned int id; // Unique for this client only
     pthread_t thread;
     struct client other_side_client;
 
@@ -32,7 +31,7 @@ struct file_list{
 
 // init
 struct file_list *file_list_init();
-int file_list_assigne_id(struct file_list *filiste, char *name);
+void file_list_add(struct file_list *filiste, char *name);
 
 // Free
 void file_free(struct file *f);

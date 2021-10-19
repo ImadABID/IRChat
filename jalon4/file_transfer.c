@@ -12,21 +12,18 @@ struct file_list *file_list_init(){
     return filiste;
 }
 
-int file_list_assigne_id(struct file_list *filiste, char *name){
-
-    static unsigned int id_ref = 0;
+void file_list_add(struct file_list *filiste, char *name){
 
     struct file *f = malloc(sizeof(struct file));
     
-    f->id = id_ref++;
+
     f->transfer_status = PROPOSED;
     strcpy(f->name, name);
 
     f->next = filiste->first_file;
     filiste->first_file = f;
     filiste->file_nbr++;
-
-    return f->id;
+    
 }
 
 // Free

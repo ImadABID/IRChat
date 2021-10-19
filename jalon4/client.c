@@ -249,6 +249,8 @@ int main(int argc, char *argv[]) {
 					if(data == NULL){
 						printf("Please Respect this format : /send file_name receiver_nickname\n");
 					}else{
+						file_list_add(file_out_list, struct_msg.infos);
+						printf("You are going to be notified when %s responds.\n", struct_msg.infos);
 						send_msg(socket_fd, &struct_msg, data);
 					}
 
@@ -355,8 +357,9 @@ int main(int argc, char *argv[]) {
 					break;
 
 				case FILE_REQUEST:
-					printf("[%s] requests to send you %s.\n", msg_struct.infos, (char *) data);
-					//printf("Type \n", msg_struct.infos, (char *) data);
+					file_list_add(file_in_list, (char *) data);
+					printf("[%s] requests to send you %s.\n You can accept it or rejected any time you want by Typing : \n", msg_struct.infos, (char *) data);
+					printf("\tTo accept it, type :\t/file_accept %s\n\tTo reject it, type :\t/file_reject %s\n", (char *) data, (char *) data);
 					break;
 
 				case FILE_REJECT:
