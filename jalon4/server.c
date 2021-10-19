@@ -473,15 +473,15 @@ int main(int argc, char *argv[]) {
 							strcpy(data, msg_error);
 							struct_msg.type = FILE_REJECT;
 							printf("\t%s\n", msg_error);
-
+							strcpy(struct_msg.nick_sender, "Server");
+							send_msg(pollfds[i].fd, &struct_msg, data);
 
 						}else{
 							printf("\tThe request was sent to %s.\n", struct_msg.infos);
 							strcpy(struct_msg.infos, struct_msg.nick_sender);
+							strcpy(struct_msg.nick_sender, "Server");
+							send_msg(*(target_client->fd), &struct_msg, data);
 						}
-
-						strcpy(struct_msg.nick_sender, "Server");
-						send_msg(*(target_client->fd), &struct_msg, data);
 
 						break;
 
