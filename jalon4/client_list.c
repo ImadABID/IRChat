@@ -38,13 +38,15 @@ struct client *client_copy(struct client *c){
 
 void client_free(struct client *c){
     
-    free(c->fd);
-    free(c->host);
-    free(c->port);
-    free(c->nickname);
-    free(c->connecion_time);
+    if(c != NULL){
+        if(c->fd) free(c->fd);
+        if(c->host) free(c->host);
+        if(c->port) free(c->port);
+        if(c->nickname) free(c->nickname);
+        if(c->connecion_time) free(c->connecion_time);
 
-    free(c);
+        free(c);
+    }
 }
 
 void client_recursive_free(struct client *c){

@@ -31,7 +31,7 @@ struct file_list{
 
 // init
 struct file_list *file_list_init();
-void file_list_add(struct file_list *filiste, char *name);
+void file_list_add(struct file_list *filiste, char *name, char *other_side_client_nick);
 
 // Free
 void file_free(struct file *f);
