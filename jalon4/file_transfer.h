@@ -38,4 +38,8 @@ void file_free(struct file *f);
 void file_recursif_free(struct file *f);
 void list_file_free(struct file_list *filiste);
 
+// Getters
+
+struct file *file_list_get_by_filename(struct file_list * filiste, char *filename);
+
 #endif

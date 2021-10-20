@@ -256,6 +256,19 @@ int main(int argc, char *argv[]) {
 
 					break;
 
+				case FILE_REJECT:{
+					struct file *f = file_list_get_by_filename(file_in_list, (char *) data);
+					if(f == NULL){
+						printf("You didn't received any file with this name. Retry with /file_reject a_valid_filename.\n");
+						printf("Suggestion :\n\t /file_hist : to display file transfer history.");
+					}else{
+						strcpy(struct_msg.infos, f->other_side_client.nickname);
+						printf("Rejection was sent to %s.\n", struct_msg.infos);
+						send_msg(socket_fd, &struct_msg, data);
+					}
+					break;
+				}
+
 				default:
 					break;
 			}
@@ -363,8 +376,13 @@ int main(int argc, char *argv[]) {
 					break;
 
 				case FILE_REJECT:
-					printf("[%s] %s\n", msg_struct.nick_sender, (char *) data);
+					if(strcmp(msg_struct.nick_sender, "Server") == 0){
+						printf("[%s] %s\n", msg_struct.nick_sender, (char *) data);
+					}else{
+						printf("[%s] %s was rejected.\n", msg_struct.nick_sender, (char *) data);
+					}
 					break;
+
 
 
 				case CLIENT_QUIT:

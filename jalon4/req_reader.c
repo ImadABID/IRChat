@@ -127,6 +127,17 @@ enum msg_type req_reader(char *req, struct message *struct_msg, void **data){
         return MULTICAST_QUIT;
     }
 
+    if(strcmp(req, "/quit") == 0){
+
+        *data = NULL;
+        struct_msg->pld_len = 0;
+        strcpy(struct_msg->nick_sender, nick_name);
+        struct_msg->type = CLIENT_QUIT;
+        strcpy(struct_msg->infos,"");
+        return CLIENT_QUIT;
+        
+    }
+
     if(strncmp(req, "/send ", 6) == 0){
 
         /*
@@ -170,14 +181,20 @@ enum msg_type req_reader(char *req, struct message *struct_msg, void **data){
 
     }
 
-    if(strcmp(req, "/quit") == 0){
 
-        *data = NULL;
-        struct_msg->pld_len = 0;
+    if(strncmp(req, "/file_reject ", 13) == 0){
+        
+        struct_msg->pld_len = (strlen(req+13)+1)*sizeof(char);
         strcpy(struct_msg->nick_sender, nick_name);
-        struct_msg->type = CLIENT_QUIT;
-        strcpy(struct_msg->infos,"");
-        return CLIENT_QUIT;
+        struct_msg->type = FILE_REJECT;
+
+        //struct file
+        //struct_msg->infos To be set by the client
+
+        *data = malloc(struct_msg->pld_len);
+        strcpy(*data, req+13);
+        
+        return FILE_REJECT;
         
     }
 

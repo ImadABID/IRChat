@@ -56,3 +56,18 @@ void list_file_free(struct file_list *filiste){
     file_recursif_free(filiste->first_file);
     free(filiste);
 }
+
+
+// Getters
+
+struct file *file_list_get_by_filename(struct file_list * filiste, char *filename){
+    struct file *f = filiste->first_file;
+
+    while(f!=NULL){
+        if(strcmp(f->name, filename) == 0){
+            return f;
+        }
+    }
+
+    return NULL;
+}
