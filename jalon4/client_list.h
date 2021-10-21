@@ -35,6 +35,7 @@ struct client *client_copy(struct client *c);
 
 // Client free
 void client_free(struct client *c);
+void client_free_fields_only(struct client c);
 void client_recursive_free(struct client *c);
 
 // Client List

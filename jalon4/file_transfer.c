@@ -44,8 +44,11 @@ void file_list_add(struct file_list *filiste, char *name, char *other_side_clien
 // Free
 
 void file_free(struct file *f){
-    client_free(&(f->other_side_client));
-    free(f);
+    if(f != NULL){
+        client_free_fields_only(f->other_side_client);
+        free(f);
+        f = NULL;
+    }
 }
 
 void file_recursif_free(struct file *f){
@@ -56,8 +59,11 @@ void file_recursif_free(struct file *f){
 }
 
 void list_file_free(struct file_list *filiste){
-    file_recursif_free(filiste->first_file);
-    free(filiste);
+    if(filiste != NULL){
+        file_recursif_free(filiste->first_file);
+        free(filiste);
+        filiste = NULL;
+    }
 }
 
 
@@ -67,7 +73,6 @@ struct file *file_list_get_by_filename(struct file_list * filiste, char *filenam
     struct file *f = filiste->first_file;
 
     while(f!=NULL){
-        printf("%s ?= %s\n", filename, f->name);
         if(strcmp(f->name, filename) == 0){
             return f;
         }

@@ -39,14 +39,17 @@ struct client *client_copy(struct client *c){
 void client_free(struct client *c){
     
     if(c != NULL){
-        if(c->fd) free(c->fd);
-        if(c->host) free(c->host);
-        if(c->port) free(c->port);
-        if(c->nickname) free(c->nickname);
-        if(c->connecion_time) free(c->connecion_time);
-
+        client_free_fields_only(*c);
         free(c);
     }
+}
+
+void client_free_fields_only(struct client c){
+    if(c.fd != NULL) free(c.fd);
+    if(c.host != NULL) free(c.host);
+    if(c.port != NULL) free(c.port);
+    if(c.nickname != NULL) free(c.nickname);
+    if(c.connecion_time != NULL) free(c.connecion_time);
 }
 
 void client_recursive_free(struct client *c){
