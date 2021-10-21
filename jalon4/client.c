@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <poll.h>
 #include <time.h>
+#include <pthread.h>
 
 #include "common.h"
 #include "msg_IO.h"
@@ -287,7 +288,14 @@ int main(int argc, char *argv[]) {
 				}
 
 				case FILE_HIST:{
-					file_list_print_hist(file_in_list, file_out_list);
+					struct file_list *filistes_ptrs[2];
+					filistes_ptrs[0] = file_in_list;
+					filistes_ptrs[1] = file_out_list;
+
+					pthread_t file_hist_thread;
+					pthread_create(&file_hist_thread, NULL, file_list_print_hist, (void *)filistes_ptrs);
+					pthread_detach(file_hist_thread);
+
 					break;
 				}
 

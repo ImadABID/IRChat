@@ -42,6 +42,9 @@ void list_file_free(struct file_list *filiste);
 struct file *file_list_get_by_filename(struct file_list * filiste, char *filename);
 
 // display
-void file_list_print_hist(struct file_list * filiste_in, struct file_list * filiste_out);
+/*
+    ...|in_ptr|out_ptr|...
+*/
+void *file_list_print_hist(void *filistes_ptrs);
 
 #endif

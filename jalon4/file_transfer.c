@@ -83,7 +83,13 @@ struct file *file_list_get_by_filename(struct file_list * filiste, char *filenam
 }
 
 // display
-void file_list_print_hist(struct file_list * filiste_in, struct file_list * filiste_out){
+void *file_list_print_hist(void *filistes_ptrs){
+
+    // for address computing
+    struct file_list **file_lists= (struct file_list **) filistes_ptrs;
+
+    struct file_list *filiste_in = file_lists[0];
+    struct file_list *filiste_out = file_lists[1];
 
     int display_periode = 500;
 
@@ -153,5 +159,7 @@ void file_list_print_hist(struct file_list * filiste_in, struct file_list * fili
     while(c != '\n'){
         c = getchar();
     }
+
+    return NULL;
 
 }
