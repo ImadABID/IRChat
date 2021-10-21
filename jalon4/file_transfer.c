@@ -1,7 +1,10 @@
 #include "file_transfer.h"
 
+#include <stdio.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <poll.h>
 
 // init
 
@@ -70,4 +73,22 @@ struct file *file_list_get_by_filename(struct file_list * filiste, char *filenam
     }
 
     return NULL;
+}
+
+// display
+void file_list_print_hist(struct file_list * filiste_in, struct file_list * filiste_out){
+
+    int display_periode = 1000;
+
+    int nfds =1;
+    struct pollfd pollstdin[nfds];
+    pollstdin[0].fd = STDIN_FILENO;
+    pollstdin[0].revents = 0;
+    pollstdin[0].events = 1;
+    
+    int i = 0;
+    while(poll(pollstdin, nfds, display_periode) == 0){
+        printf("\r%d : Entre to quit file transfer history", i++); fflush(stdout);
+    }
+
 }

@@ -198,6 +198,12 @@ enum msg_type req_reader(char *req, struct message *struct_msg, void **data){
         
     }
 
+    if(strcmp(req, "/file_hist") == 0){
+        
+        return FILE_HIST;
+        
+    }
+
     struct_msg->pld_len = strlen(req)+1;
     *data = malloc(struct_msg->pld_len*sizeof(char));
     strcpy(*data, req);

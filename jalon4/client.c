@@ -60,6 +60,7 @@ void nickname_set_1st_time(int socket_fd){
 		while(req_reader(buff_stdin, &struct_msg, &data) != NICKNAME_NEW){
 			if(data != NULL){
 				free(data);
+				data = NULL;
 			}
 			printf("Choose a nickname. Ex : /nick Bond007\n");
 			c = getchar();
@@ -173,8 +174,10 @@ int main(int argc, char *argv[]) {
 			switch (req_reader(buff_stdin, &struct_msg, &data)){
 
 				case ECHO_SEND:
-					send_msg(socket_fd, &struct_msg, data);
-					printf("[%s]->[Server] : %s\n", nick_name, (char *) data);
+					if(strlen((char *) data) > 0){
+						send_msg(socket_fd, &struct_msg, data);
+						printf("[%s]->[Server] : %s\n", nick_name, (char *) data);
+					}
 					break;
 
 				case NICKNAME_NEW:
@@ -233,8 +236,10 @@ int main(int argc, char *argv[]) {
 					break;
 
 				case MULTICAST_SEND:
-					send_msg(socket_fd, &struct_msg, data);
-					printf("[%s]=>[%s] : %s\n\n", nick_name, struct_msg.infos, (char *) data);
+					if(strlen((char *) data) > 0){
+						send_msg(socket_fd, &struct_msg, data);
+						printf("[%s]=>[%s] : %s\n\n", nick_name, struct_msg.infos, (char *) data);
+					}
 					break;
 
 				case CLIENT_QUIT:
@@ -270,12 +275,18 @@ int main(int argc, char *argv[]) {
 					break;
 				}
 
+				case FILE_HIST:{
+					file_list_print_hist(file_in_list, file_out_list);
+					break;
+				}
+
 				default:
 					break;
 			}
 
 			if(data != NULL){
 				free(data);
+				data = NULL;
 			}
 
 			pollfds[0].revents = 0;
@@ -404,6 +415,7 @@ int main(int argc, char *argv[]) {
 
 			if(data != NULL){
 				free(data);
+				data = NULL;
 			}
 
 			printf("\n");

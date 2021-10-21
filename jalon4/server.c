@@ -249,6 +249,7 @@ int main(int argc, char *argv[]) {
 						// Just in case the client send data
 						if(data != NULL){
 							free(data);
+							data = NULL;
 						}
 
 						data = malloc(struct_msg.pld_len * sizeof(char));
@@ -265,6 +266,7 @@ int main(int argc, char *argv[]) {
 						// Just in case the client send data
 						if(data != NULL){
 							free(data);
+							data =  NULL;
 						}
 
 						struct_msg.pld_len = sizeof(struct whois_data);
@@ -319,6 +321,7 @@ int main(int argc, char *argv[]) {
 						if(client_rcv == NULL){
 							if(data != NULL){
 								free(data);
+								data = NULL;
 							}
 							
 							char msg_error[] = "Error : No user with such nickname.";
@@ -374,6 +377,7 @@ int main(int argc, char *argv[]) {
 						// Just in case the client send data
 						if(data != NULL){
 							free(data);
+							data = NULL;
 						}
 
 						data = malloc(struct_msg.pld_len * sizeof(char));
@@ -464,6 +468,7 @@ int main(int argc, char *argv[]) {
 
 							if(data != NULL){
 								free(data);
+								data = NULL;
 							}
 
 							char msg_error[] = "No user with such nickname. Sending file rejected.";
@@ -492,6 +497,7 @@ int main(int argc, char *argv[]) {
 
 							if(data != NULL){
 								free(data);
+								data = NULL;
 							}
 
 							char msg_error[] = "No user with such nickname.";
@@ -517,6 +523,7 @@ int main(int argc, char *argv[]) {
 
 				if(data != NULL){
 					free(data);
+					data = NULL;
 				}
 
 				//set pollfds[i].revent = 0
