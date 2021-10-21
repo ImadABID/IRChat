@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <poll.h>
+#include <time.h>
 
 #include "common.h"
 #include "msg_IO.h"
@@ -254,9 +255,19 @@ int main(int argc, char *argv[]) {
 					if(data == NULL){
 						printf("Please Respect this format : /send file_name receiver_nickname\n");
 					}else{
+						char new_file_name[STR_MAX_SIZE];
+						sprintf(new_file_name, "%s_%ld", (char *) data, time(NULL));
+						
+						free(data);
+
+						struct_msg.pld_len = (strlen(new_file_name)+1) * sizeof(char);
+
+						data = malloc(struct_msg.pld_len);
+						strcpy((char *) data, new_file_name);
+
 						file_list_add(file_out_list, (char *) data, struct_msg.infos);
 						send_msg(socket_fd, &struct_msg, data);
-						printf("You are going to be notified when %s responds.\n", struct_msg.infos);
+						printf("File new name is %s.\nYou are going to be notified when %s responds.\n", (char *) data, struct_msg.infos);
 					}
 
 					break;

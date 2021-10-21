@@ -92,17 +92,13 @@ void file_list_print_hist(struct file_list * filiste_in, struct file_list * fili
     pollstdin[0].fd = STDIN_FILENO;
     pollstdin[0].revents = 0;
     pollstdin[0].events = 1;
-    
-    printf("File history display\n");
-    for(int i = 0; i < filiste_in->file_nbr+filiste_out->file_nbr; i++){
-        printf("-\n");
-    }
+
+    struct file *f;
 
     char ref_char = '-';
-    while(poll(pollstdin, nfds, display_periode) == 0){
-        printf("\033[%dF", filiste_in->file_nbr+filiste_out->file_nbr+1);
+    while(1){
 
-        struct file *f = filiste_in->first_file;
+        f = filiste_in->first_file;
         while(f != NULL){
             switch(f->transfer_status){
                 case PROPOSED:
@@ -143,7 +139,15 @@ void file_list_print_hist(struct file_list * filiste_in, struct file_list * fili
         }else{
             ref_char = '-';
         }
+
+        if(poll(pollstdin, nfds, display_periode) != 0){
+            break;
+        }else{
+            printf("\033[%dF", filiste_in->file_nbr+filiste_out->file_nbr+1);
+        }
     }
+
+    // Empty stdin
     char c;
     c = getchar();
     while(c != '\n'){
