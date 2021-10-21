@@ -28,6 +28,14 @@ struct file_list{
     unsigned int file_nbr;
 };
 
+// mutexs
+pthread_mutex_t mutex_file_hist_stdin;
+pthread_mutex_t mutex_file_hist_server_socket;
+
+// init & destroy mutexs
+void file_list_mutexs_init();
+void file_list_mutexs_destroy();
+
 // init
 struct file_list *file_list_init();
 void file_list_add(struct file_list *filiste, char *name, char *other_side_client_nick);

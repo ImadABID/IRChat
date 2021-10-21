@@ -6,6 +6,18 @@
 #include <string.h>
 #include <poll.h>
 
+
+// init & destroy mutexs
+void file_list_mutexs_init(){
+    pthread_mutex_init(&mutex_file_hist_stdin, NULL);
+    pthread_mutex_init(&mutex_file_hist_server_socket, NULL);
+}
+
+void file_list_mutexs_destroy(){
+    pthread_mutex_destroy(&mutex_file_hist_stdin);
+    pthread_mutex_destroy(&mutex_file_hist_server_socket);
+}
+
 // init
 
 struct file_list *file_list_init(){
@@ -102,6 +114,9 @@ void *file_list_print_hist(void *filistes_ptrs){
     struct file *f;
 
     char ref_char = '-';
+
+    pthread_mutex_lock(&mutex_file_hist_stdin);
+
     while(1){
 
         f = filiste_in->first_file;
@@ -159,6 +174,8 @@ void *file_list_print_hist(void *filistes_ptrs){
     while(c != '\n'){
         c = getchar();
     }
+
+    pthread_mutex_unlock(&mutex_file_hist_stdin);
 
     return NULL;
 

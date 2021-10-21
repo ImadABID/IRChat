@@ -138,6 +138,7 @@ int main(int argc, char *argv[]) {
 	strcpy(salon_name, "");
 
 	// Set File I/O Lists
+	file_list_mutexs_init();
 	struct file_list *file_in_list = file_list_init();
 	struct file_list *file_out_list = file_list_init();
 
@@ -158,157 +159,161 @@ int main(int argc, char *argv[]) {
 
 		if(pollfds[0].revents & POLLIN){ // stdin
 
-			// buffer index
-			memset(buff_stdin, 0, MSG_LEN);
-			buff_stdin_i = 0;
+			if(pthread_mutex_trylock(&mutex_file_hist_stdin) == 0){
+				// buffer index
+				memset(buff_stdin, 0, MSG_LEN);
+				buff_stdin_i = 0;
 
-			c = getchar();
-			while(c != '\n'){
-				buff_stdin[buff_stdin_i++] = c;
 				c = getchar();
-			}
+				while(c != '\n'){
+					buff_stdin[buff_stdin_i++] = c;
+					c = getchar();
+				}
 
-			buff_stdin[buff_stdin_i++] = '\0';
+				buff_stdin[buff_stdin_i++] = '\0';
 
-			// Understaing request
-			struct message struct_msg;
-			void *data;
-			switch (req_reader(buff_stdin, &struct_msg, &data)){
+				// Understaing request
+				struct message struct_msg;
+				void *data;
+				switch (req_reader(buff_stdin, &struct_msg, &data)){
 
-				case ECHO_SEND:
-					if(strlen((char *) data) > 0){
-						send_msg(socket_fd, &struct_msg, data);
-						printf("[%s]->[Server] : %s\n", nick_name, (char *) data);
-					}
-					break;
+					case ECHO_SEND:
+						if(strlen((char *) data) > 0){
+							send_msg(socket_fd, &struct_msg, data);
+							printf("[%s]->[Server] : %s\n", nick_name, (char *) data);
+						}
+						break;
 
-				case NICKNAME_NEW:
-					if(name_validate(struct_msg.infos)){
-						send_msg(socket_fd, &struct_msg, data);
-					}
-					break;
-				
-				case NICKNAME_LIST:
-					send_msg(socket_fd, &struct_msg, data);
-					break;
-
-				case NICKNAME_INFOS:
-					send_msg(socket_fd, &struct_msg, data);
-					break;
-
-				case BROADCAST_SEND:
-					send_msg(socket_fd, &struct_msg, data);
-					printf("[%s]->[All] : %s\n\n", nick_name, (char *) data);
-					break;
-
-				case UNICAST_SEND:
-					if(data == NULL){
-						printf("Syntax Error. /msg Syntax :\n\t/msg receiverNickname the message you want to send\n");
-					}else{
-						printf("[%s]->[%s] : %s\n\n", nick_name, struct_msg.infos, (char *) data);
-						send_msg(socket_fd, &struct_msg, data);
-					}
-
-					break;
-
-				case MULTICAST_CREATE :
-					if(name_validate(struct_msg.infos)){
-						send_msg(socket_fd, &struct_msg, data);
-					}
-					break;
-
-				case MULTICAST_LIST:
-					send_msg(socket_fd, &struct_msg, data);
-					break;
-				
-				case MULTICAST_JOIN:
-					send_msg(socket_fd, &struct_msg, data);
-					printf("Joining channel : %s\n\n", struct_msg.infos);
-					break;
-
-				case MULTICAST_QUIT:
-					if(strcmp(struct_msg.infos, salon_name) != 0){
-						printf("Please type one of the following requests :\n\t /quit %s : to quit the channel\n\t /quit to exit the programme\n", salon_name);
-					}else{
-						send_msg(socket_fd, &struct_msg, data);
-						printf("Quiting channel : %s\n\n", struct_msg.infos);
-						strcpy(salon_name, "");
-					}
+					case NICKNAME_NEW:
+						if(name_validate(struct_msg.infos)){
+							send_msg(socket_fd, &struct_msg, data);
+						}
+						break;
 					
-					break;
-
-				case MULTICAST_SEND:
-					if(strlen((char *) data) > 0){
+					case NICKNAME_LIST:
 						send_msg(socket_fd, &struct_msg, data);
-						printf("[%s]=>[%s] : %s\n\n", nick_name, struct_msg.infos, (char *) data);
-					}
-					break;
+						break;
 
-				case CLIENT_QUIT:
+					case NICKNAME_INFOS:
+						send_msg(socket_fd, &struct_msg, data);
+						break;
 
-					send_msg(socket_fd, &struct_msg, data);
+					case BROADCAST_SEND:
+						send_msg(socket_fd, &struct_msg, data);
+						printf("[%s]->[All] : %s\n\n", nick_name, (char *) data);
+						break;
 
-					printf("Deconnected\n");
-					goto quitter;
+					case UNICAST_SEND:
+						if(data == NULL){
+							printf("Syntax Error. /msg Syntax :\n\t/msg receiverNickname the message you want to send\n");
+						}else{
+							printf("[%s]->[%s] : %s\n\n", nick_name, struct_msg.infos, (char *) data);
+							send_msg(socket_fd, &struct_msg, data);
+						}
 
-				case FILE_REQUEST:
+						break;
 
-					if(data == NULL){
-						printf("Please Respect this format : /send file_name receiver_nickname\n");
-					}else{
-						char new_file_name[STR_MAX_SIZE];
-						sprintf(new_file_name, "%s_%ld", (char *) data, time(NULL));
+					case MULTICAST_CREATE :
+						if(name_validate(struct_msg.infos)){
+							send_msg(socket_fd, &struct_msg, data);
+						}
+						break;
+
+					case MULTICAST_LIST:
+						send_msg(socket_fd, &struct_msg, data);
+						break;
+					
+					case MULTICAST_JOIN:
+						send_msg(socket_fd, &struct_msg, data);
+						printf("Joining channel : %s\n\n", struct_msg.infos);
+						break;
+
+					case MULTICAST_QUIT:
+						if(strcmp(struct_msg.infos, salon_name) != 0){
+							printf("Please type one of the following requests :\n\t /quit %s : to quit the channel\n\t /quit to exit the programme\n", salon_name);
+						}else{
+							send_msg(socket_fd, &struct_msg, data);
+							printf("Quiting channel : %s\n\n", struct_msg.infos);
+							strcpy(salon_name, "");
+						}
 						
-						free(data);
+						break;
 
-						struct_msg.pld_len = (strlen(new_file_name)+1) * sizeof(char);
+					case MULTICAST_SEND:
+						if(strlen((char *) data) > 0){
+							send_msg(socket_fd, &struct_msg, data);
+							printf("[%s]=>[%s] : %s\n\n", nick_name, struct_msg.infos, (char *) data);
+						}
+						break;
 
-						data = malloc(struct_msg.pld_len);
-						strcpy((char *) data, new_file_name);
+					case CLIENT_QUIT:
 
-						file_list_add(file_out_list, (char *) data, struct_msg.infos);
 						send_msg(socket_fd, &struct_msg, data);
-						printf("File new name is %s.\nYou are going to be notified when %s responds.\n", (char *) data, struct_msg.infos);
+
+						printf("Deconnected\n");
+						goto quitter;
+
+					case FILE_REQUEST:
+
+						if(data == NULL){
+							printf("Please Respect this format : /send file_name receiver_nickname\n");
+						}else{
+							char new_file_name[STR_MAX_SIZE];
+							sprintf(new_file_name, "%s_%ld", (char *) data, time(NULL));
+							
+							free(data);
+
+							struct_msg.pld_len = (strlen(new_file_name)+1) * sizeof(char);
+
+							data = malloc(struct_msg.pld_len);
+							strcpy((char *) data, new_file_name);
+
+							file_list_add(file_out_list, (char *) data, struct_msg.infos);
+							send_msg(socket_fd, &struct_msg, data);
+							printf("File new name is %s.\nYou are going to be notified when %s responds.\n", (char *) data, struct_msg.infos);
+						}
+
+						break;
+
+					case FILE_REJECT:{
+						struct file *f = file_list_get_by_filename(file_in_list, (char *) data);
+						if(f == NULL){
+							printf("You didn't received any file with this name. Retry with /file_reject a_valid_filename.\n");
+							printf("Suggestion :\n\t /file_hist : to display file transfer history.");
+						}else{
+							f->transfer_status = REJECTED;
+							strcpy(struct_msg.infos, f->other_side_client.nickname);
+							printf("Rejection was sent to %s.\n", struct_msg.infos);
+							send_msg(socket_fd, &struct_msg, data);
+						}
+						break;
 					}
 
-					break;
+					case FILE_HIST:{
+						struct file_list *filistes_ptrs[2];
+						filistes_ptrs[0] = file_in_list;
+						filistes_ptrs[1] = file_out_list;
 
-				case FILE_REJECT:{
-					struct file *f = file_list_get_by_filename(file_in_list, (char *) data);
-					if(f == NULL){
-						printf("You didn't received any file with this name. Retry with /file_reject a_valid_filename.\n");
-						printf("Suggestion :\n\t /file_hist : to display file transfer history.");
-					}else{
-						f->transfer_status = REJECTED;
-						strcpy(struct_msg.infos, f->other_side_client.nickname);
-						printf("Rejection was sent to %s.\n", struct_msg.infos);
-						send_msg(socket_fd, &struct_msg, data);
+						pthread_t file_hist_thread;
+						pthread_create(&file_hist_thread, NULL, file_list_print_hist, (void *)filistes_ptrs);
+						pthread_detach(file_hist_thread);
+
+						break;
 					}
-					break;
+
+					default:
+						break;
 				}
 
-				case FILE_HIST:{
-					struct file_list *filistes_ptrs[2];
-					filistes_ptrs[0] = file_in_list;
-					filistes_ptrs[1] = file_out_list;
-
-					pthread_t file_hist_thread;
-					pthread_create(&file_hist_thread, NULL, file_list_print_hist, (void *)filistes_ptrs);
-					pthread_detach(file_hist_thread);
-
-					break;
+				if(data != NULL){
+					free(data);
+					data = NULL;
 				}
 
-				default:
-					break;
-			}
+				pollfds[0].revents = 0;
 
-			if(data != NULL){
-				free(data);
-				data = NULL;
+				pthread_mutex_unlock(&mutex_file_hist_stdin);
 			}
-
-			pollfds[0].revents = 0;
 		}
 
 		if(pollfds[1].revents & POLLIN){ // socket
@@ -451,6 +456,7 @@ int main(int argc, char *argv[]) {
 	
 	quitter :
 	close(socket_fd);
+	void file_list_mutexs_destroy();
 	list_file_free(file_in_list);
 	list_file_free(file_out_list);
 
