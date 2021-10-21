@@ -466,17 +466,8 @@ int main(int argc, char *argv[]) {
 						target_client = client_list_get_client_by_nickname(client_list, struct_msg.infos);
 						if(target_client == NULL){
 
-							if(data != NULL){
-								free(data);
-								data = NULL;
-							}
-
-							char msg_error[] = "No user with such nickname. Sending file rejected.";
-							struct_msg.pld_len = sizeof(char)*(strlen(msg_error)+1);
-							data = malloc(struct_msg.pld_len);
-							strcpy(data, msg_error);
 							struct_msg.type = FILE_REJECT;
-							printf("\t%s\n", msg_error);
+							printf("\tNo user with such nickname. Sending file rejected.\n");
 							strcpy(struct_msg.nick_sender, "Server");
 							send_msg(pollfds[i].fd, &struct_msg, data);
 

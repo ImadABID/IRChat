@@ -8,14 +8,13 @@
 
 enum file_transfer_status{
     PROPOSED, //REQEUSTED
-    ACCEPTED,
     REJECTED,
-    TRANSFERING,
-    TRANSFERED
+    TRANSFERING
 };
 
 struct file{
     enum file_transfer_status transfer_status;
+    unsigned char progress;
     char name[STR_MAX_SIZE]; //path
     pthread_t thread;
     struct client other_side_client;

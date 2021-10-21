@@ -5,7 +5,6 @@
 #include "req_reader.h"
 
 enum msg_type req_reader(char *req, struct message *struct_msg, void **data){
-    // /nick, /who, /whois , /msgall , /msg, /quit
 
     if(strncmp(req, "/nick ", 6) == 0){
 
@@ -199,9 +198,7 @@ enum msg_type req_reader(char *req, struct message *struct_msg, void **data){
     }
 
     if(strcmp(req, "/file_hist") == 0){
-        
         return FILE_HIST;
-        
     }
 
     struct_msg->pld_len = strlen(req)+1;

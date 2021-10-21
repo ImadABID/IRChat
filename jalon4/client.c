@@ -255,8 +255,8 @@ int main(int argc, char *argv[]) {
 						printf("Please Respect this format : /send file_name receiver_nickname\n");
 					}else{
 						file_list_add(file_out_list, (char *) data, struct_msg.infos);
-						printf("You are going to be notified when %s responds.\n", struct_msg.infos);
 						send_msg(socket_fd, &struct_msg, data);
+						printf("You are going to be notified when %s responds.\n", struct_msg.infos);
 					}
 
 					break;
@@ -390,13 +390,12 @@ int main(int argc, char *argv[]) {
 				case FILE_REJECT:{
 
 					struct file * f = file_list_get_by_filename(file_out_list, (char *) data);
-
 					if(f != NULL){
 						f->transfer_status = REJECTED;
 						if(strcmp(msg_struct.nick_sender, "Server") == 0){
-							printf("[%s] %s\n", msg_struct.nick_sender, (char *) data);
+							printf("[%s] No user with such nickname. %s rejected.\n", msg_struct.nick_sender, (char *) data);
 						}else{
-							printf("[%s] %s was rejected.\n", msg_struct.nick_sender, (char *) data);
+							printf("[%s] %s was rejected by its receiver.\n", msg_struct.nick_sender, (char *) data);
 						}
 					}
 

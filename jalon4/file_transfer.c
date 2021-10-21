@@ -67,9 +67,11 @@ struct file *file_list_get_by_filename(struct file_list * filiste, char *filenam
     struct file *f = filiste->first_file;
 
     while(f!=NULL){
+        printf("%s ?= %s\n", filename, f->name);
         if(strcmp(f->name, filename) == 0){
             return f;
         }
+        f = f->next;
     }
 
     return NULL;
@@ -78,7 +80,7 @@ struct file *file_list_get_by_filename(struct file_list * filiste, char *filenam
 // display
 void file_list_print_hist(struct file_list * filiste_in, struct file_list * filiste_out){
 
-    int display_periode = 1000;
+    int display_periode = 500;
 
     int nfds =1;
     struct pollfd pollstdin[nfds];
@@ -86,9 +88,61 @@ void file_list_print_hist(struct file_list * filiste_in, struct file_list * fili
     pollstdin[0].revents = 0;
     pollstdin[0].events = 1;
     
-    int i = 0;
+    printf("File history display\n");
+    for(int i = 0; i < filiste_in->file_nbr+filiste_out->file_nbr; i++){
+        printf("-\n");
+    }
+
+    char ref_char = '-';
     while(poll(pollstdin, nfds, display_periode) == 0){
-        printf("\r%d : Entre to quit file transfer history", i++); fflush(stdout);
+        printf("\033[%dF", filiste_in->file_nbr+filiste_out->file_nbr+1);
+
+        struct file *f = filiste_in->first_file;
+        while(f != NULL){
+            switch(f->transfer_status){
+                case PROPOSED:
+                    printf("%s : you <- %s REQEUSTED\n", f->name, f->other_side_client.nickname);
+                    break;
+                
+                case REJECTED:
+                    printf("%s : you <- %s REJECTED\n", f->name, f->other_side_client.nickname);
+                    break;
+
+                default:
+                    printf("%s : you <- %s  %d%%\n", f->name, f->other_side_client.nickname, f->progress);
+                    break;
+            }
+            f = f->next;
+        }
+        f = filiste_out->first_file;
+        while(f != NULL){
+            switch(f->transfer_status){
+                case PROPOSED:
+                    printf("%s : you -> %s REQEUSTED\n", f->name, f->other_side_client.nickname);
+                    break;
+                
+                case REJECTED:
+                    printf("%s : you -> %s REJECTED\n", f->name, f->other_side_client.nickname);
+                    break;
+
+                default:
+                    printf("%s : you -> %s  %d%%\n", f->name, f->other_side_client.nickname, f->progress);
+                    break;
+            }
+            f = f->next;
+        }
+
+        printf("%c Refreshing. Click [Entre] to quit file transfer history\n", ref_char);
+        if(ref_char ==  '-'){
+            ref_char = '|';
+        }else{
+            ref_char = '-';
+        }
+    }
+    char c;
+    c = getchar();
+    while(c != '\n'){
+        c = getchar();
     }
 
 }
