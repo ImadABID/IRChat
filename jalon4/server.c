@@ -107,6 +107,8 @@ int main(int argc, char *argv[]) {
 		pollfds[i].revents = 0;
 	}
 
+	printf("Ready.\n");
+
 	while(1){
 		int n_active;
 		if(-1 == (n_active = poll(pollfds, MAX_CLIENTS, POLL_TIMEOUT))){

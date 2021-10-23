@@ -21,7 +21,7 @@ struct client *client_new(){
 
 /* client_copy
     /!\ Important
-        pointer always point to the same data
+        pointers always point to the same data
 */
 struct client *client_copy(struct client *c){
     struct client *c_cp = malloc(sizeof(struct client));

@@ -209,14 +209,14 @@ int main(int argc, char *argv[]) {
 
 					case BROADCAST_SEND:
 						send_msg(socket_fd, &struct_msg, data);
-						printf("[%s]->[All] : %s\n\n", nick_name, (char *) data);
+						printf("[%s]->[All] : %s\n", nick_name, (char *) data);
 						break;
 
 					case UNICAST_SEND:
 						if(data == NULL){
 							printf("Syntax Error. /msg Syntax :\n\t/msg receiverNickname the message you want to send\n");
 						}else{
-							printf("[%s]->[%s] : %s\n\n", nick_name, struct_msg.infos, (char *) data);
+							printf("[%s]->[%s] : %s\n", nick_name, struct_msg.infos, (char *) data);
 							send_msg(socket_fd, &struct_msg, data);
 						}
 
@@ -234,7 +234,7 @@ int main(int argc, char *argv[]) {
 					
 					case MULTICAST_JOIN:
 						send_msg(socket_fd, &struct_msg, data);
-						printf("Joining channel : %s\n\n", struct_msg.infos);
+						printf("Joining channel : %s\n", struct_msg.infos);
 						break;
 
 					case MULTICAST_QUIT:
@@ -242,7 +242,7 @@ int main(int argc, char *argv[]) {
 							printf("Please type one of the following requests :\n\t /quit %s : to quit the channel\n\t /quit to exit the programme\n", salon_name);
 						}else{
 							send_msg(socket_fd, &struct_msg, data);
-							printf("Quiting channel : %s\n\n", struct_msg.infos);
+							printf("Quiting channel : %s\n", struct_msg.infos);
 							strcpy(salon_name, "");
 						}
 						
@@ -251,7 +251,7 @@ int main(int argc, char *argv[]) {
 					case MULTICAST_SEND:
 						if(strlen((char *) data) > 0){
 							send_msg(socket_fd, &struct_msg, data);
-							printf("[%s]=>[%s] : %s\n\n", nick_name, struct_msg.infos, (char *) data);
+							printf("[%s]=>[%s] : %s\n", nick_name, struct_msg.infos, (char *) data);
 						}
 						break;
 
@@ -288,7 +288,7 @@ int main(int argc, char *argv[]) {
 						struct file *f = file_list_get_by_filename(file_in_list, (char *) data);
 						if(f == NULL){
 							printf("You didn't received any file with this name. Retry with /file_reject a_valid_filename.\n");
-							printf("Suggestion :\n\t /file_hist : to display file transfer history.");
+							printf("Suggestion :\n\t /file_hist : to display file transfer history.\n");
 						}else{
 							f->transfer_status = REJECTED;
 							strcpy(struct_msg.infos, f->other_side_client.nickname);
@@ -313,6 +313,8 @@ int main(int argc, char *argv[]) {
 					default:
 						break;
 				}
+
+				printf("\n");
 
 				if(data != NULL){
 					free(data);
@@ -415,7 +417,7 @@ int main(int argc, char *argv[]) {
 					break;
 
 				case MULTICAST_SEND:
-					printf("\n[%s]=>[%s] : %s\n\n", msg_struct.nick_sender, msg_struct.infos, (char *) data);
+					printf("\n[%s]=>[%s] : %s\n", msg_struct.nick_sender, msg_struct.infos, (char *) data);
 					break;
 
 				case FILE_REQUEST:
@@ -449,12 +451,12 @@ int main(int argc, char *argv[]) {
 					break;
 			}
 
+			printf("\n");
+
 			if(data != NULL){
 				free(data);
 				data = NULL;
 			}
-
-			printf("\n");
 
 			pollfds[1].revents = 0;
 
