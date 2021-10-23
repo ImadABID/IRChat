@@ -28,14 +28,6 @@ struct file_list{
     unsigned int file_nbr;
 };
 
-// mutexs
-pthread_mutex_t mutex_file_hist_stdin;
-pthread_mutex_t mutex_file_hist_server_socket;
-
-// init & destroy mutexs
-void file_list_mutexs_init();
-void file_list_mutexs_destroy();
-
 // init
 struct file_list *file_list_init();
 void file_list_add(struct file_list *filiste, char *name, char *other_side_client_nick);
@@ -50,9 +42,12 @@ void list_file_free(struct file_list *filiste);
 struct file *file_list_get_by_filename(struct file_list * filiste, char *filename);
 
 // display
-/*
-    ...|in_ptr|out_ptr|...
-*/
-void *file_list_print_hist(void *filistes_ptrs);
+void file_list_print_hist_launch_thread(
+    struct file_list *filiste_in,
+    struct file_list *filiste_out,
+    pthread_mutex_t *mutex_stdin,
+    pthread_mutex_t *mutex_server_socket
+);
+void *file_list_print_hist(void *);
 
 #endif

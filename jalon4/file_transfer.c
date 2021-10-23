@@ -7,17 +7,6 @@
 #include <poll.h>
 
 
-// init & destroy mutexs
-void file_list_mutexs_init(){
-    pthread_mutex_init(&mutex_file_hist_stdin, NULL);
-    pthread_mutex_init(&mutex_file_hist_server_socket, NULL);
-}
-
-void file_list_mutexs_destroy(){
-    pthread_mutex_destroy(&mutex_file_hist_stdin);
-    pthread_mutex_destroy(&mutex_file_hist_server_socket);
-}
-
 // init
 
 struct file_list *file_list_init(){
@@ -95,13 +84,43 @@ struct file *file_list_get_by_filename(struct file_list * filiste, char *filenam
 }
 
 // display
-void *file_list_print_hist(void *filistes_ptrs){
 
-    // for address computing
-    struct file_list **file_lists= (struct file_list **) filistes_ptrs;
+struct file_list_print_hist_args{
+    struct file_list *filiste_in;
+    struct file_list *filiste_out;
+    pthread_mutex_t *mutex_stdin;
+    pthread_mutex_t *mutex_server_socket;
+};
 
-    struct file_list *filiste_in = file_lists[0];
-    struct file_list *filiste_out = file_lists[1];
+void file_list_print_hist_launch_thread(
+    struct file_list *filiste_in,
+    struct file_list *filiste_out,
+    pthread_mutex_t *mutex_stdin,
+    pthread_mutex_t *mutex_server_socket
+){
+    struct file_list_print_hist_args *args_struct = malloc(sizeof(struct file_list_print_hist_args));
+
+    args_struct->filiste_in = filiste_in;
+    args_struct->filiste_out = filiste_out;
+    args_struct->mutex_stdin = mutex_stdin;
+    args_struct->mutex_server_socket = mutex_server_socket;
+
+    pthread_t file_hist_thread;
+    pthread_create(&file_hist_thread, NULL, file_list_print_hist, (void *) args_struct);
+    pthread_detach(file_hist_thread);
+
+}
+
+void *file_list_print_hist(void *void_p_args){
+    
+    struct file_list_print_hist_args *args_struct= (struct file_list_print_hist_args *) void_p_args;
+
+    struct file_list *filiste_in = args_struct->filiste_in;
+    struct file_list *filiste_out = args_struct->filiste_out;
+    pthread_mutex_t *mutex_stdin = args_struct->mutex_stdin;
+    pthread_mutex_t *mutex_server_socket = args_struct->mutex_server_socket;
+
+    free(void_p_args);
 
     int display_periode = 500;
 
@@ -114,10 +133,13 @@ void *file_list_print_hist(void *filistes_ptrs){
     struct file *f;
 
     char ref_char = '-';
-
-    pthread_mutex_lock(&mutex_file_hist_stdin);
-
+    
+    pthread_mutex_lock(mutex_stdin);
+    //-printf("[stdin mutex] taken by display_func.\n");
     while(1){
+
+        pthread_mutex_lock(mutex_server_socket);
+        //-printf("[socket mutex] taken by display_func.\n");
 
         f = filiste_in->first_file;
         while(f != NULL){
@@ -154,18 +176,21 @@ void *file_list_print_hist(void *filistes_ptrs){
             f = f->next;
         }
 
-        printf("%c Refreshing. Click [Entre] to quit file transfer history\n", ref_char);
+        printf("%c Refreshing. Click [Entre] to quit file transfer history.\n", ref_char);
         if(ref_char ==  '-'){
             ref_char = '|';
         }else{
             ref_char = '-';
         }
 
+
         if(poll(pollstdin, nfds, display_periode) != 0){
             break;
-        }else{
-            printf("\033[%dF", filiste_in->file_nbr+filiste_out->file_nbr+1);
         }
+        printf("\033[%dF", filiste_in->file_nbr+filiste_out->file_nbr+1);
+        //-printf("[socket mutex] released by display_func.\n");
+        pthread_mutex_unlock(mutex_server_socket);
+        usleep(100);
     }
 
     // Empty stdin
@@ -175,7 +200,10 @@ void *file_list_print_hist(void *filistes_ptrs){
         c = getchar();
     }
 
-    pthread_mutex_unlock(&mutex_file_hist_stdin);
+    //-printf("[socket mutex] released by display_func.\n");
+    //-printf("[stdin mutex] released by display_func.\n");
+    pthread_mutex_unlock(mutex_server_socket);
+    pthread_mutex_unlock(mutex_stdin);
 
     return NULL;
 

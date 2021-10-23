@@ -130,6 +130,10 @@ int main(int argc, char *argv[]) {
 
 	int socket_fd = handle_connect(argv[1], argv[2]);
 
+	// Set File I/O Lists
+	struct file_list *file_in_list = file_list_init();
+	struct file_list *file_out_list = file_list_init();
+
 	//Set Nickname
 	strcpy(nick_name, "");
 	nickname_set_1st_time(socket_fd);
@@ -137,10 +141,12 @@ int main(int argc, char *argv[]) {
 	// Set Salon Name
 	strcpy(salon_name, "");
 
-	// Set File I/O Lists
-	file_list_mutexs_init();
-	struct file_list *file_in_list = file_list_init();
-	struct file_list *file_out_list = file_list_init();
+	//file_hist's mutexs def & init
+	pthread_mutex_t mutex_file_hist_stdin;
+	pthread_mutex_t mutex_file_hist_server_socket;
+
+	pthread_mutex_init(&mutex_file_hist_stdin, NULL);
+	pthread_mutex_init(&mutex_file_hist_server_socket, NULL);
 
 	struct pollfd pollfds[2];
 	pollfds[0].fd = STDIN_FILENO;
@@ -160,6 +166,9 @@ int main(int argc, char *argv[]) {
 		if(pollfds[0].revents & POLLIN){ // stdin
 
 			if(pthread_mutex_trylock(&mutex_file_hist_stdin) == 0){
+				
+				//-printf("[stdin mutex] taken by main.\n");
+
 				// buffer index
 				memset(buff_stdin, 0, MSG_LEN);
 				buff_stdin_i = 0;
@@ -290,13 +299,13 @@ int main(int argc, char *argv[]) {
 					}
 
 					case FILE_HIST:{
-						struct file_list *filistes_ptrs[2];
-						filistes_ptrs[0] = file_in_list;
-						filistes_ptrs[1] = file_out_list;
 
-						pthread_t file_hist_thread;
-						pthread_create(&file_hist_thread, NULL, file_list_print_hist, (void *)filistes_ptrs);
-						pthread_detach(file_hist_thread);
+						file_list_print_hist_launch_thread(
+							file_in_list,
+							file_out_list,
+							&mutex_file_hist_stdin,
+							&mutex_file_hist_server_socket
+						);
 
 						break;
 					}
@@ -312,11 +321,15 @@ int main(int argc, char *argv[]) {
 
 				pollfds[0].revents = 0;
 
+				//-printf("[stdin mutex] realesed by main.\n");
 				pthread_mutex_unlock(&mutex_file_hist_stdin);
 			}
 		}
 
 		if(pollfds[1].revents & POLLIN){ // socket
+
+			pthread_mutex_lock(&mutex_file_hist_server_socket);
+			//-printf("[socket mutex] taken by main.\n");
 
 			// Receiving message
 			void *data = NULL;
@@ -444,6 +457,9 @@ int main(int argc, char *argv[]) {
 			printf("\n");
 
 			pollfds[1].revents = 0;
+
+			//- printf("[socket mutex] realesed by main.\n");
+			pthread_mutex_unlock(&mutex_file_hist_server_socket);
 		}
 
 		if(pollfds[1].revents & POLLHUP){
@@ -456,7 +472,8 @@ int main(int argc, char *argv[]) {
 	
 	quitter :
 	close(socket_fd);
-	void file_list_mutexs_destroy();
+	pthread_mutex_destroy(&mutex_file_hist_stdin);
+	pthread_mutex_destroy(&mutex_file_hist_server_socket);
 	list_file_free(file_in_list);
 	list_file_free(file_out_list);
 
