@@ -1,4 +1,5 @@
 #include "file_transfer.h"
+#include "socket_IO.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -6,6 +7,8 @@
 #include <string.h>
 #include <poll.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -22,7 +25,12 @@ struct file_list *file_list_init(){
     return filiste;
 }
 
-void file_list_add(struct file_list *filiste, char *name, char *other_side_client_nick){
+void file_list_add(
+    struct file_list *filiste,
+    char *name,
+    char *other_side_client_nick,
+    int src_file_fd
+){
 
     
     struct file *f = malloc(sizeof(struct file));
@@ -30,6 +38,7 @@ void file_list_add(struct file_list *filiste, char *name, char *other_side_clien
 
     f->transfer_status = PROPOSED;
     strcpy(f->name, name);
+    f->src_file_fd = src_file_fd;
 
     f->other_side_client.nickname = malloc(STR_MAX_SIZE * sizeof(char));
     strcpy(f->other_side_client.nickname, other_side_client_nick);
@@ -162,7 +171,7 @@ void *file_list_print_hist(void *void_p_args){
                     break;
 
                 default:
-                    printf("%s\t: you <- %s  %d%%\n", f->name, f->other_side_client.nickname, f->progress);
+                    printf("%s\t: you <- %s  %ld%%\n", f->name, f->other_side_client.nickname, f->progress);
                     break;
             }
             f = f->next;
@@ -179,7 +188,7 @@ void *file_list_print_hist(void *void_p_args){
                     break;
 
                 default:
-                    printf("%s\t: you -> %s  %d%%\n", f->name, f->other_side_client.nickname, f->progress);
+                    printf("%s\t: you -> %s  %ld%%\n", f->name, f->other_side_client.nickname, f->progress);
                     break;
             }
             f = f->next;
@@ -224,10 +233,22 @@ void *file_list_print_hist(void *void_p_args){
 
 }
 
-// Receive & sent
+// Receive
 
-u_short file_receive_lunche_thread(){
+struct file_receive_args{
+    int listen_socket_fd;
+    struct file *trans_file;
+    pthread_mutex_t *mutex_file_list;
+    char receiver_nickname[NICK_LEN];
+    char file_name[STR_MAX_SIZE];
+};
 
+u_short file_receive_launche_thread(
+    struct file *trans_file,
+    pthread_mutex_t *mutex_file_list,
+    char *receiver_nickname,
+    char *file_name
+){
 
     //Création de la socket
     int listen_fd = -1;
@@ -280,17 +301,171 @@ u_short file_receive_lunche_thread(){
     }
 
     // Thread_launch
+    struct file_receive_args * file_receive_args = malloc(sizeof(struct file_receive_args));
+    file_receive_args->listen_socket_fd = listen_fd;
+    file_receive_args->trans_file = trans_file;
+    file_receive_args->mutex_file_list = mutex_file_list;
+    strcat(file_receive_args->receiver_nickname, receiver_nickname);
+    strcat(file_receive_args->file_name, file_name);
+
+    pthread_t receive_thread;
+    pthread_create(&receive_thread, NULL, file_receive, (void *)file_receive_args);
+    pthread_detach(receive_thread);
 
     return port_nbr;
 
 }
 
-void *file_send(void *void_p_args){
+void *file_receive(void * void_p_args){
+    struct file_receive_args *file_receive_args = (struct file_receive_args *) void_p_args;
 
-    struct file_transfer_conn_info receiver_conn_info = *((struct file_transfer_conn_info *) void_p_args);
+    // create file in disk.
+    char path[2*STR_MAX_SIZE];
+    struct stat st;
+    if (stat("Users", &st) == -1) {
+        mkdir("Users", 0777);
+    }
+
+    sprintf(path, "Users/%s", file_receive_args->receiver_nickname);
+    if (stat(path, &st) == -1) {
+        mkdir(path, 0777);
+    }
+
+    sprintf(path, "Users/%s/%s", file_receive_args->receiver_nickname, file_receive_args->file_name);
+
+    int file_fd = open(path, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
+
+    //accept
+    struct sockaddr client_addr;
+    memset(&client_addr, 0, sizeof(client_addr));
+    socklen_t sockaddr_len = sizeof(client_addr);
+    int client_fd;
+    if(-1 == (client_fd = accept(file_receive_args->listen_socket_fd, &client_addr, &sockaddr_len))){
+        perror("Accept");
+    }
+
+    size_t packet_size;
+    char *buff;
+    while(1){
+
+        buff = (char *) receive_data(client_fd, &packet_size);
+
+        if(buff == NULL){
+            //trans completed
+            break;
+        }
+
+        int err = 0;
+        int r = 0;
+        while(r < packet_size){
+            err = write(file_fd, buff+r, packet_size-r);
+            if(err == -1){
+                perror("write");
+                exit(EXIT_FAILURE);
+            }
+            r += err;
+        }
+
+        file_receive_args->trans_file->progress += packet_size;
+    }
+
+
+    close(client_fd);
+    close(file_fd);
+
+    file_receive_args->trans_file->transfer_status = COMPLETED;
+
     free(void_p_args);
 
-    printf("sending file to %s:%hu.\n", receiver_conn_info.hostname, receiver_conn_info.port);
+    return NULL;
+}
 
+// Send
+
+struct file_send_args{
+    struct file_transfer_conn_info conn_info;
+    struct file *trans_file;
+    pthread_mutex_t *mutex_file_list;
+};
+
+void file_send_launche_thread(
+    struct file_transfer_conn_info conn_info,
+    struct file *trans_file,
+    pthread_mutex_t *mutex_file_list
+){
+    
+    struct file_send_args *args_struct = malloc(sizeof(struct file_send_args));
+
+    args_struct->conn_info = conn_info;
+    args_struct->trans_file = trans_file;
+    args_struct->mutex_file_list = mutex_file_list;
+
+    pthread_t file_send_thread;
+    pthread_create(&file_send_thread, NULL, file_send, (void *)args_struct);
+    pthread_detach(file_send_thread);
+}
+
+void *file_send(void *void_p_args){
+    struct file_send_args file_send_args = *((struct file_send_args *) void_p_args);
+
+    //Création de la socket
+    int sock_fd = -1;
+    sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if(sock_fd == -1){
+        perror("Socket");
+        exit(EXIT_FAILURE);
+    }
+
+    //construction de struct sockaddrs
+    struct addrinfo hints, *res, *tmp;
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_NUMERICSERV;
+
+    char port_str[STR_MAX_SIZE];
+    sprintf(port_str, "%hu", file_send_args.conn_info.port);
+    int err = getaddrinfo(file_send_args.conn_info.hostname, port_str, &hints, &res);
+    if(err){
+        errx(1, "%s", gai_strerror(err));
+    }
+
+    //connect
+    tmp = res;
+    while(tmp != NULL){
+        if(tmp->ai_addr->sa_family == AF_INET){
+            err = connect(sock_fd, tmp->ai_addr, tmp->ai_addrlen);
+            if(err == -1){
+                perror("connect");
+                exit(EXIT_FAILURE);
+            }
+        }
+        tmp = tmp->ai_next;
+    }
+
+    int packet_size = 1*1024; //octés
+    
+    char buff[packet_size];
+  
+    size_t r = read(file_send_args.trans_file->src_file_fd, buff, packet_size);
+    if(r == -1){
+        perror("Read");
+        exit(EXIT_FAILURE);
+    }
+    while(r != 0){
+        // Transfer data
+        send_data(sock_fd, buff, r);
+
+        r = read(file_send_args.trans_file->src_file_fd, buff, packet_size);
+        if(r == -1){
+            perror("Read");
+            exit(EXIT_FAILURE);
+        }
+        
+    }
+
+    close(sock_fd);
+    close(file_send_args.trans_file->src_file_fd); file_send_args.trans_file->src_file_fd = -1;
+    free(void_p_args);
     return NULL;
 }

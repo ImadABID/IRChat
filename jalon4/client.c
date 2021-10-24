@@ -9,6 +9,10 @@
 #include <poll.h>
 #include <time.h>
 #include <pthread.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 
 #include "common.h"
 #include "msg_IO.h"
@@ -144,9 +148,11 @@ int main(int argc, char *argv[]) {
 	//file_hist's mutexs def & init
 	pthread_mutex_t mutex_file_hist_stdin;
 	pthread_mutex_t mutex_file_hist_server_socket;
+	pthread_mutex_t mutex_file_hist_vs_send_rececive;
 
 	pthread_mutex_init(&mutex_file_hist_stdin, NULL);
 	pthread_mutex_init(&mutex_file_hist_server_socket, NULL);
+	pthread_mutex_init(&mutex_file_hist_vs_send_rececive, NULL);
 
 	struct pollfd pollfds[2];
 	pollfds[0].fd = STDIN_FILENO;
@@ -267,22 +273,31 @@ int main(int argc, char *argv[]) {
 						if(data == NULL){
 							printf("Please Respect this format : /send file_name receiver_nickname\n");
 						}else{
-							char new_file_name[STR_MAX_SIZE];
-							sprintf(new_file_name, "%s_%ld", (char *) data, time(NULL));
 							
-							if(data != NULL){
-								free(data);
-								data= NULL;
+							// trying to open file
+							int src_file = open((char *) data, O_RDONLY);
+							if(src_file == -1){
+								printf("Can't find %s\n", (char *) data);
+							}else{
+
+								char new_file_name[STR_MAX_SIZE];
+								sprintf(new_file_name, "%ld_%s", time(NULL), (char *) data);
+								
+								if(data != NULL){
+									free(data);
+									data= NULL;
+								}
+
+								struct_msg.pld_len = (strlen(new_file_name)+1) * sizeof(char);
+
+								data = malloc(struct_msg.pld_len);
+								strcpy((char *) data, new_file_name);
+
+								file_list_add(file_out_list, (char *) data, struct_msg.infos, src_file);
+								send_msg(socket_fd, &struct_msg, data);
+								printf("File new name is %s.\nYou are going to be notified when %s responds.\n", (char *) data, struct_msg.infos);
+
 							}
-
-							struct_msg.pld_len = (strlen(new_file_name)+1) * sizeof(char);
-
-							data = malloc(struct_msg.pld_len);
-							strcpy((char *) data, new_file_name);
-
-							file_list_add(file_out_list, (char *) data, struct_msg.infos);
-							send_msg(socket_fd, &struct_msg, data);
-							printf("File new name is %s.\nYou are going to be notified when %s responds.\n", (char *) data, struct_msg.infos);
 						}
 
 						break;
@@ -320,7 +335,10 @@ int main(int argc, char *argv[]) {
 							
 							data = malloc(struct_msg.pld_len);
 							
-							*((ushort *)data) = file_receive_lunche_thread();
+							*((ushort *)data) = file_receive_launche_thread(
+								f, &mutex_file_hist_vs_send_rececive,
+								nick_name, f->name
+							);
 
 							printf("The acceptaion was sent to %s.\nThe port number assigned to this transfer is %hu.\n", struct_msg.infos, *((ushort *)data));
 							send_msg(socket_fd, &struct_msg, data);
@@ -451,7 +469,7 @@ int main(int argc, char *argv[]) {
 					break;
 
 				case FILE_REQUEST:
-					file_list_add(file_in_list, (char *) data, msg_struct.infos);
+					file_list_add(file_in_list, (char *) data, msg_struct.infos, -1);
 					printf("[%s] requests to send you %s.\n You can accept it or rejected any time you want by Typing : \n", msg_struct.infos, (char *) data);
 					printf("\tTo accept it, type :\t/file_accept %s\n\tTo reject it, type :\t/file_reject %s\n", (char *) data, (char *) data);
 					break;
@@ -484,13 +502,9 @@ int main(int argc, char *argv[]) {
 						f->transfer_status = TRANSFERING;
 						printf("[%s] %s was accepted.\n", msg_struct.nick_sender, msg_struct.infos);
 						
-						void *file_send_args = malloc(msg_struct.pld_len);
+						struct file_transfer_conn_info conn_info = *( (struct file_transfer_conn_info *) data);
 
-						memcpy(file_send_args, data, msg_struct.pld_len);
-
-						pthread_t file_send_thread;
-						pthread_create(&file_send_thread, NULL, file_send, file_send_args);
-						pthread_detach(file_send_thread);
+						file_send_launche_thread(conn_info, f, &mutex_file_hist_vs_send_rececive);
 					}
 
 					break;
@@ -531,6 +545,7 @@ int main(int argc, char *argv[]) {
 	close(socket_fd);
 	pthread_mutex_destroy(&mutex_file_hist_stdin);
 	pthread_mutex_destroy(&mutex_file_hist_server_socket);
+	pthread_mutex_destroy(&mutex_file_hist_vs_send_rececive);
 	list_file_free(file_in_list);
 	list_file_free(file_out_list);
 

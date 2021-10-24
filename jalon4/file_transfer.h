@@ -10,14 +10,16 @@
 enum file_transfer_status{
     PROPOSED, //REQEUSTED
     REJECTED,
-    TRANSFERING
+    TRANSFERING,
+    COMPLETED
 };
 
 struct file{
     enum file_transfer_status transfer_status;
-    unsigned char progress;
+    size_t progress; // in bytes
     char name[STR_MAX_SIZE]; //path
-    pthread_t thread;
+    int src_file_fd; // Used in file_out_list
+    //pthread_t thread;
     struct client other_side_client;
 
     struct file *next;
@@ -31,7 +33,12 @@ struct file_list{
 
 // init
 struct file_list *file_list_init();
-void file_list_add(struct file_list *filiste, char *name, char *other_side_client_nick);
+void file_list_add(
+    struct file_list *filiste,
+    char *name,
+    char *other_side_client_nick,
+    int src_file_fd
+);
 
 // Free
 void file_free(struct file *f);
@@ -51,13 +58,26 @@ void file_list_print_hist_launch_thread(
 );
 void *file_list_print_hist(void *);
 
-// Receive & sent
+// Receive
 struct file_transfer_conn_info{
     char hostname[STR_MAX_SIZE];
     u_short port;
 };
-u_short file_receive_lunche_thread();
 
+u_short file_receive_launche_thread(
+    struct file *trans_file,
+    pthread_mutex_t *mutex_file_list,
+    char *receiver_nickname,
+    char *file_name
+);
+void *file_receive(void * void_p_args);
+
+//send
+void file_send_launche_thread(
+    struct file_transfer_conn_info conn_info,
+    struct file *trans_file,
+    pthread_mutex_t *mutex_file_list
+);
 void *file_send(void *void_p_args);
 
 #endif
