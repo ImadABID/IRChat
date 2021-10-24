@@ -13,6 +13,7 @@
 #include "msg_IO.h"
 #include "client_list.h"
 #include "salon_list.h"
+#include "file_transfer.h"
 
 
 int handle_bind(char port[]) {
@@ -481,7 +482,7 @@ int main(int argc, char *argv[]) {
 						}
 
 						break;
-					
+
 					case FILE_REJECT:
 
 						target_client = client_list_get_client_by_nickname(client_list, struct_msg.infos);
@@ -505,6 +506,66 @@ int main(int argc, char *argv[]) {
 
 						}else{
 							printf("\tFile rejection (file name = %s) was sent to %s.\n", (char *)data, struct_msg.infos);
+							send_msg(*(target_client->fd), &struct_msg, data);
+						}
+
+						break;
+
+					case FILE_ACCEPT:
+
+						/*
+							/!\	nick_sender is used to store nickname of file sender not accepter.
+								info is used to store filename
+								data is used to store port number
+
+							/!\ nick_sender is going store the acceptor
+								info is going to store filename
+								data is going to store struct of hostname & port number
+						*/
+
+						target_client = client_list_get_client_by_nickname(client_list, struct_msg.nick_sender);
+
+						if(target_client == NULL){
+
+							if(data != NULL){
+								free(data);
+								data = NULL;
+							}
+
+							char msg_error[] = "No user with such nickname.";
+							struct_msg.pld_len = sizeof(char)*(strlen(msg_error)+1);
+							data = malloc(struct_msg.pld_len);
+							strcpy(data, msg_error);
+							struct_msg.type = UNICAST_SEND;
+							printf("\t%s\n", msg_error);
+							strcpy(struct_msg.nick_sender, "Server");
+							strcpy(struct_msg.infos, c->nickname);
+							send_msg(pollfds[i].fd, &struct_msg, data);
+
+						}else{
+							
+							strcpy(struct_msg.nick_sender, c->nickname);
+							struct_msg.pld_len = sizeof(struct file_transfer_conn_info);
+
+							struct file_transfer_conn_info *receiver_conn_info = malloc(struct_msg.pld_len);
+
+							receiver_conn_info->port = *((ushort *) data);
+							strcpy(receiver_conn_info->hostname, c->host);
+
+							if(data != NULL){
+								free(data);
+								data = NULL;
+							}
+							data = (void *) receiver_conn_info;
+
+							printf(
+								"\tFile acceptation (file name = %s) was sent to %s\n\twith connect info %s:%hu.\n",
+								struct_msg.infos,
+								target_client->nickname,
+								((struct file_transfer_conn_info *) data)->hostname,
+								((struct file_transfer_conn_info *) data)->port
+							);
+							
 							send_msg(*(target_client->fd), &struct_msg, data);
 						}
 

@@ -197,6 +197,16 @@ enum msg_type req_reader(char *req, struct message *struct_msg, void **data){
         
     }
 
+    if(strncmp(req, "/file_accept ", 13) == 0){
+        struct_msg->type = FILE_ACCEPT;
+
+        //struct_msg->nicksender, data & pld_len To be set by the client
+        strcpy(struct_msg->infos, req+13);
+        
+        return FILE_ACCEPT;
+
+    }
+
     if(strcmp(req, "/file_hist") == 0){
         return FILE_HIST;
     }

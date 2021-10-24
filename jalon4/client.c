@@ -270,7 +270,10 @@ int main(int argc, char *argv[]) {
 							char new_file_name[STR_MAX_SIZE];
 							sprintf(new_file_name, "%s_%ld", (char *) data, time(NULL));
 							
-							free(data);
+							if(data != NULL){
+								free(data);
+								data= NULL;
+							}
 
 							struct_msg.pld_len = (strlen(new_file_name)+1) * sizeof(char);
 
@@ -293,6 +296,33 @@ int main(int argc, char *argv[]) {
 							f->transfer_status = REJECTED;
 							strcpy(struct_msg.infos, f->other_side_client.nickname);
 							printf("Rejection was sent to %s.\n", struct_msg.infos);
+							send_msg(socket_fd, &struct_msg, data);
+						}
+						break;
+					}
+
+					case FILE_ACCEPT:{
+						/*
+							/!\	nick_sender is used to store nickname of file sender not accepter.
+								info is used to store filename
+								data is used to store port number
+						*/
+						struct file *f = file_list_get_by_filename(file_in_list, struct_msg.infos);
+						if(f == NULL){
+							printf("You didn't received any file with this name. Retry with /file_accept a_valid_filename.\n");
+							printf("Suggestion :\n\t /file_hist : to display file transfer history.\n");
+						}else{
+							
+							f->transfer_status = TRANSFERING;
+							strcpy(struct_msg.nick_sender, f->other_side_client.nickname);
+
+							struct_msg.pld_len = sizeof(ushort);
+							
+							data = malloc(struct_msg.pld_len);
+							
+							*((ushort *)data) = file_receive_lunche_thread();
+
+							printf("The acceptaion was sent to %s.\nThe port number assigned to this transfer is %hu.\n", struct_msg.infos, *((ushort *)data));
 							send_msg(socket_fd, &struct_msg, data);
 						}
 						break;
@@ -434,8 +464,33 @@ int main(int argc, char *argv[]) {
 						if(strcmp(msg_struct.nick_sender, "Server") == 0){
 							printf("[%s] No user with such nickname. %s rejected.\n", msg_struct.nick_sender, (char *) data);
 						}else{
-							printf("[%s] %s was rejected by its receiver.\n", msg_struct.nick_sender, (char *) data);
+							printf("[%s] %s was rejected.\n", msg_struct.nick_sender, (char *) data);
 						}
+					}
+
+					break;
+				}
+
+				case FILE_ACCEPT:{
+
+					/*
+							/!\ nick_sender stores the acceptor
+								info stores filename
+								data stores struct of hostname & port number
+					*/
+
+					struct file * f = file_list_get_by_filename(file_out_list, msg_struct.infos);
+					if(f != NULL){
+						f->transfer_status = TRANSFERING;
+						printf("[%s] %s was accepted.\n", msg_struct.nick_sender, msg_struct.infos);
+						
+						void *file_send_args = malloc(msg_struct.pld_len);
+
+						memcpy(file_send_args, data, msg_struct.pld_len);
+
+						pthread_t file_send_thread;
+						pthread_create(&file_send_thread, NULL, file_send, file_send_args);
+						pthread_detach(file_send_thread);
 					}
 
 					break;

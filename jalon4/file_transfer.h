@@ -2,6 +2,7 @@
 #define __FILE_TRANSFER_H__
 
 #include <pthread.h>
+#include <sys/types.h>
 
 #include "common.h"
 #include "client_list.h"
@@ -49,5 +50,14 @@ void file_list_print_hist_launch_thread(
     pthread_mutex_t *mutex_server_socket
 );
 void *file_list_print_hist(void *);
+
+// Receive & sent
+struct file_transfer_conn_info{
+    char hostname[STR_MAX_SIZE];
+    u_short port;
+};
+u_short file_receive_lunche_thread();
+
+void *file_send(void *void_p_args);
 
 #endif
