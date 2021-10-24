@@ -157,21 +157,25 @@ void *file_list_print_hist(void *void_p_args){
         pthread_mutex_lock(mutex_server_socket);
         //-printf("[socket mutex] taken by display_func.\n");
 
-        printf("\n########## %c File Transfer History %c\n", ref_char, ref_char);
+        printf("\n %c File Transfer History %c\n\n", ref_char, ref_char);
 
         f = filiste_in->first_file;
         while(f != NULL){
             switch(f->transfer_status){
                 case PROPOSED:
-                    printf("%s\t: you <- %s REQEUSTED\n", f->name, f->other_side_client.nickname);
+                    printf("\t%s\t: you <- %s REQEUSTED\n", f->name, f->other_side_client.nickname);
                     break;
                 
                 case REJECTED:
-                    printf("%s\t: you <- %s REJECTED\n", f->name, f->other_side_client.nickname);
+                    printf("\t%s\t: you <- %s REJECTED\n", f->name, f->other_side_client.nickname);
+                    break;
+                
+                case COMPLETED:
+                    printf("\t%s\t: you <- %s COMPLETED %ld bytes\n", f->name, f->other_side_client.nickname, f->progress);
                     break;
 
                 default:
-                    printf("%s\t: you <- %s  %ld%%\n", f->name, f->other_side_client.nickname, f->progress);
+                    printf("\t%s\t: you <- %s TRANSFERING %ld bytes\n", f->name, f->other_side_client.nickname, f->progress);
                     break;
             }
             f = f->next;
@@ -180,21 +184,25 @@ void *file_list_print_hist(void *void_p_args){
         while(f != NULL){
             switch(f->transfer_status){
                 case PROPOSED:
-                    printf("%s\t: you -> %s REQEUSTED\n", f->name, f->other_side_client.nickname);
+                    printf("\t%s\t: you -> %s REQEUSTED\n", f->name, f->other_side_client.nickname);
                     break;
                 
                 case REJECTED:
-                    printf("%s\t: you -> %s REJECTED\n", f->name, f->other_side_client.nickname);
+                    printf("\t%s\t: you -> %s REJECTED\n", f->name, f->other_side_client.nickname);
+                    break;
+
+                case COMPLETED:
+                    printf("\t%s\t: you -> %s COMPLETED %ld bytes\n", f->name, f->other_side_client.nickname, f->progress);
                     break;
 
                 default:
-                    printf("%s\t: you -> %s  %ld%%\n", f->name, f->other_side_client.nickname, f->progress);
+                    printf("\t%s\t: you -> %s TRANSFERING %ld bytes\n", f->name, f->other_side_client.nickname, f->progress);
                     break;
             }
             f = f->next;
         }
 
-        printf("########## Click [Entre] to quit file transfer history.\n");
+        printf("\nClick [Entre] to quit file transfer history.\nThe transfer will continue in the background.\n");
         if(ref_char ==  '-'){
             ref_char = '|';
         }else{
@@ -205,7 +213,7 @@ void *file_list_print_hist(void *void_p_args){
         if(poll(pollstdin, nfds, display_periode) != 0){
             break;
         }
-        nbr_line_to_delete = filiste_in->file_nbr+filiste_out->file_nbr+3;
+        nbr_line_to_delete = filiste_in->file_nbr+filiste_out->file_nbr+6;
         printf("\033[%dF", nbr_line_to_delete);
         for(int i = 0; i < nbr_line_to_delete; i++){
             printf("                                                                   \n");
@@ -456,6 +464,8 @@ void *file_send(void *void_p_args){
         // Transfer data
         send_data(sock_fd, buff, r);
 
+        file_send_args.trans_file->progress += r;
+
         r = read(file_send_args.trans_file->src_file_fd, buff, packet_size);
         if(r == -1){
             perror("Read");
@@ -463,6 +473,8 @@ void *file_send(void *void_p_args){
         }
         
     }
+
+    file_send_args.trans_file->transfer_status = COMPLETED;
 
     close(sock_fd);
     close(file_send_args.trans_file->src_file_fd); file_send_args.trans_file->src_file_fd = -1;

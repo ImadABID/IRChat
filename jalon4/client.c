@@ -342,6 +342,13 @@ int main(int argc, char *argv[]) {
 
 							printf("The acceptaion was sent to %s.\nThe port number assigned to this transfer is %hu.\n", struct_msg.infos, *((ushort *)data));
 							send_msg(socket_fd, &struct_msg, data);
+
+							file_list_print_hist_launch_thread(
+								file_in_list,
+								file_out_list,
+								&mutex_file_hist_stdin,
+								&mutex_file_hist_server_socket
+							);
 						}
 						break;
 					}
