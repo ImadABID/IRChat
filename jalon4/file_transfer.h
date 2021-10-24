@@ -66,7 +66,6 @@ struct file_transfer_conn_info{
 
 u_short file_receive_launche_thread(
     struct file *trans_file,
-    pthread_mutex_t *mutex_file_list,
     char *receiver_nickname,
     char *file_name
 );
@@ -76,7 +75,8 @@ void *file_receive(void * void_p_args);
 void file_send_launche_thread(
     struct file_transfer_conn_info conn_info,
     struct file *trans_file,
-    pthread_mutex_t *mutex_file_list
+    pthread_mutex_t *sock_server_mutexe,
+    int sock_server_fd
 );
 void *file_send(void *void_p_args);
 

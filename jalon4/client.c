@@ -148,11 +148,11 @@ int main(int argc, char *argv[]) {
 	//file_hist's mutexs def & init
 	pthread_mutex_t mutex_file_hist_stdin;
 	pthread_mutex_t mutex_file_hist_server_socket;
-	pthread_mutex_t mutex_file_hist_vs_send_rececive;
+	pthread_mutex_t sock_server_mutexe;
 
 	pthread_mutex_init(&mutex_file_hist_stdin, NULL);
 	pthread_mutex_init(&mutex_file_hist_server_socket, NULL);
-	pthread_mutex_init(&mutex_file_hist_vs_send_rececive, NULL);
+	pthread_mutex_init(&sock_server_mutexe, NULL);
 
 	struct pollfd pollfds[2];
 	pollfds[0].fd = STDIN_FILENO;
@@ -171,6 +171,7 @@ int main(int argc, char *argv[]) {
 
 		if(pollfds[0].revents & POLLIN){ // stdin
 
+			pthread_mutex_lock(&sock_server_mutexe);
 			if(pthread_mutex_trylock(&mutex_file_hist_stdin) == 0){
 				
 				//-printf("[stdin mutex] taken by main.\n");
@@ -335,10 +336,7 @@ int main(int argc, char *argv[]) {
 							
 							data = malloc(struct_msg.pld_len);
 							
-							*((ushort *)data) = file_receive_launche_thread(
-								f, &mutex_file_hist_vs_send_rececive,
-								nick_name, f->name
-							);
+							*((ushort *)data) = file_receive_launche_thread(f, nick_name, f->name);
 
 							printf("The acceptaion was sent to %s.\nThe port number assigned to this transfer is %hu.\n", struct_msg.infos, *((ushort *)data));
 							send_msg(socket_fd, &struct_msg, data);
@@ -382,6 +380,7 @@ int main(int argc, char *argv[]) {
 				pthread_mutex_unlock(&mutex_file_hist_stdin);
 			}
 		}
+		pthread_mutex_unlock(&sock_server_mutexe);
 
 		if(pollfds[1].revents & POLLIN){ // socket
 
@@ -511,13 +510,15 @@ int main(int argc, char *argv[]) {
 						
 						struct file_transfer_conn_info conn_info = *( (struct file_transfer_conn_info *) data);
 
-						file_send_launche_thread(conn_info, f, &mutex_file_hist_vs_send_rececive);
+						file_send_launche_thread(conn_info, f, &sock_server_mutexe, socket_fd);
 					}
 
 					break;
 				}
 
-
+				case FILE_ACK:
+					printf("FILE_ACK : %s was transferd from %s to %s successfuly.\nFor more info type /file_hist\n", (char *) data, msg_struct.nick_sender, msg_struct.infos);
+					break;
 
 				case CLIENT_QUIT:
 					printf("Server Deconnected\n");
@@ -552,7 +553,7 @@ int main(int argc, char *argv[]) {
 	close(socket_fd);
 	pthread_mutex_destroy(&mutex_file_hist_stdin);
 	pthread_mutex_destroy(&mutex_file_hist_server_socket);
-	pthread_mutex_destroy(&mutex_file_hist_vs_send_rececive);
+	pthread_mutex_destroy(&sock_server_mutexe);
 	list_file_free(file_in_list);
 	list_file_free(file_out_list);
 

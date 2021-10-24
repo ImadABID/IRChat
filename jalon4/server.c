@@ -571,6 +571,17 @@ int main(int argc, char *argv[]) {
 
 						break;
 
+					case FILE_ACK:{
+						printf("\tFILE_ACK : %s was transferd from %s to %s successfuly.\n", (char *) data, struct_msg.nick_sender, struct_msg.infos);
+						struct client *file_sender = client_list_get_client_by_nickname(client_list, struct_msg.nick_sender);
+						struct client *file_reciver = client_list_get_client_by_nickname(client_list, struct_msg.infos);
+
+						send_msg(*(file_sender->fd), &struct_msg, data);
+						send_msg(*(file_reciver->fd), &struct_msg, data);
+
+						break;
+					}
+
 					default:
 						break;
 				}

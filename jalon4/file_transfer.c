@@ -1,5 +1,7 @@
 #include "file_transfer.h"
 #include "socket_IO.h"
+#include "msg_IO.h"
+#include "req_reader.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -246,14 +248,12 @@ void *file_list_print_hist(void *void_p_args){
 struct file_receive_args{
     int listen_socket_fd;
     struct file *trans_file;
-    pthread_mutex_t *mutex_file_list;
     char receiver_nickname[NICK_LEN];
     char file_name[STR_MAX_SIZE];
 };
 
 u_short file_receive_launche_thread(
     struct file *trans_file,
-    pthread_mutex_t *mutex_file_list,
     char *receiver_nickname,
     char *file_name
 ){
@@ -312,7 +312,6 @@ u_short file_receive_launche_thread(
     struct file_receive_args * file_receive_args = malloc(sizeof(struct file_receive_args));
     file_receive_args->listen_socket_fd = listen_fd;
     file_receive_args->trans_file = trans_file;
-    file_receive_args->mutex_file_list = mutex_file_list;
     strcat(file_receive_args->receiver_nickname, receiver_nickname);
     strcat(file_receive_args->file_name, file_name);
 
@@ -393,20 +392,23 @@ void *file_receive(void * void_p_args){
 struct file_send_args{
     struct file_transfer_conn_info conn_info;
     struct file *trans_file;
-    pthread_mutex_t *mutex_file_list;
+    pthread_mutex_t *sock_server_mutexe;
+    int sock_server_fd;
 };
 
 void file_send_launche_thread(
     struct file_transfer_conn_info conn_info,
     struct file *trans_file,
-    pthread_mutex_t *mutex_file_list
+    pthread_mutex_t *sock_server_mutexe,
+    int sock_server_fd
 ){
     
     struct file_send_args *args_struct = malloc(sizeof(struct file_send_args));
 
     args_struct->conn_info = conn_info;
     args_struct->trans_file = trans_file;
-    args_struct->mutex_file_list = mutex_file_list;
+    args_struct->sock_server_mutexe = sock_server_mutexe;
+    args_struct->sock_server_fd = sock_server_fd;
 
     pthread_t file_send_thread;
     pthread_create(&file_send_thread, NULL, file_send, (void *)args_struct);
@@ -475,6 +477,20 @@ void *file_send(void *void_p_args){
     }
 
     file_send_args.trans_file->transfer_status = COMPLETED;
+
+    struct message struct_msg;
+    struct_msg.pld_len = (strlen(file_send_args.trans_file->name)+1) * sizeof(char);
+    strcpy(struct_msg.nick_sender, nick_name);
+    strcpy(struct_msg.infos, file_send_args.trans_file->other_side_client.nickname);
+    struct_msg.type = FILE_ACK;
+    
+    char *data = malloc(struct_msg.pld_len);
+
+    pthread_mutex_lock(file_send_args.sock_server_mutexe);
+    send_msg(file_send_args.sock_server_fd, &struct_msg, data);
+    pthread_mutex_unlock(file_send_args.sock_server_mutexe);
+
+    free(data);
 
     close(sock_fd);
     close(file_send_args.trans_file->src_file_fd); file_send_args.trans_file->src_file_fd = -1;
