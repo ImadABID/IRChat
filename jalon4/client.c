@@ -128,6 +128,8 @@ int main(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
+	printf("The manual is available at : man.txt.\n");
+
 	char buff_stdin[MSG_LEN];
 	int buff_stdin_i;
 	char c;
