@@ -280,7 +280,7 @@ int main(int argc, char *argv[]) {
 							// trying to open file
 							int src_file = open((char *) data, O_RDONLY);
 							if(src_file == -1){
-								printf("Can't find %s\n", (char *) data);
+								printf("Can't find %s.\nUsage : /send <file_name> <receiver_nickname>\n", (char *) data);
 							}else{
 
 								char new_file_name[STR_MAX_SIZE];
@@ -508,9 +508,10 @@ int main(int argc, char *argv[]) {
 					struct file * f = file_list_get_by_filename(file_out_list, msg_struct.infos);
 					if(f != NULL){
 						f->transfer_status = TRANSFERING;
-						printf("[%s] %s was accepted.\n", msg_struct.nick_sender, msg_struct.infos);
 						
 						struct file_transfer_conn_info conn_info = *( (struct file_transfer_conn_info *) data);
+
+						printf("[%s] %s was accepted.\nTransfering file over %s:%hu\n", msg_struct.nick_sender, msg_struct.infos, conn_info.hostname, conn_info.port);
 
 						file_send_launche_thread(conn_info, f, &sock_server_mutexe, socket_fd);
 					}

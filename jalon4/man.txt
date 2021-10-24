@@ -21,7 +21,7 @@ Channels :
 Files :
 
     /file_hist                              : Display interactively files transfer history & progress.
-    /send <file_name> <reciver_nickname>    : Send file.
+    /send <file_name> <receiver_nickname>   : Send file.
     /file_accept <file_name>                : Accept a requested file. /file_hist can help to find the <file_name>.
     /file_reject <file_name>                : Reject a requested file. /file_hist can help to find the <file_name>.
 
