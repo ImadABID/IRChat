@@ -273,7 +273,7 @@ u_short file_receive_launche_thread(
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_NUMERICSERV | AI_PASSIVE;
 
-    int err = getaddrinfo("127.0.0.1", NULL, &hints, &res);
+    int err = getaddrinfo("0.0.0.0", NULL, &hints, &res);
     if(err){
         errx(1, "%s", gai_strerror(err));
     }
