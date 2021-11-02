@@ -1,3 +1,0 @@
-Nom : ABIED
-Prénom : Imad
-github_login : ImadABID
